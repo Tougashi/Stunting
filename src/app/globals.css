@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+:root {
+  --color-white: #ffffff;
+  --color-light-blue: #9ecad6;
+  --color-primary: #397789;
+  --color-foreground: #171717;
+}
+
+body {
+  background: var(--color-white);
+  color: var(--color-foreground);
+  margin: 0;
+  padding: 0;
+}
+
+/* Wave background (single gradient + crisp scallop edge) */
+.wave-background {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(140deg, #b7d4dc 0%, #9ecad6 55%, #a6ced9 100%);
+}
+
+/* Constrain content */
+.hero-container { max-width: 1250px; }
+
+/* SVG wave edge wrapper */
+.wave-edge { position:absolute; inset-inline:0; bottom:0; line-height:0; }
+.wave-edge svg { display:block; width:100%; height:120px; }
+.wave-edge path { fill:#ffffff; }
+
+/* Optional drop shadow of inner content above wave */
+.hero-container{position:relative;}
