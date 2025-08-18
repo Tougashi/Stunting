@@ -1,6 +1,6 @@
 'use client';
 
-import { Layout, Hero } from '@/components';
+import { Layout, Hero, Statistics, Features, Process, WhyCompViT } from '@/components';
 
 export default function Home() {
   const handleStartDetection = () => {
@@ -11,6 +11,10 @@ export default function Home() {
   return (
     <Layout>
       <Hero onButtonClick={handleStartDetection} />
+      <Statistics />
+      <Features />
+      <Process />
+      <WhyCompViT onStartDetection={handleStartDetection} />
     </Layout>
   );
 }

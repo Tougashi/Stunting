@@ -58,7 +58,13 @@ const Hero: React.FC<HeroProps> = ({
           {/* Right Content - Large main image with small overlay */}
           <div className="relative flex justify-center lg:justify-start">
             {/* Main image container with doctor measuring child's height */}
-            <div className="relative w-[580px] max-w-full rounded-[48px] overflow-hidden shadow-[0_8px_40px_-10px_rgba(0,0,0,0.15)] bg-white">
+            <div className="relative w-[580px] max-w-full overflow-hidden shadow-[0_8px_40px_-10px_rgba(0,0,0,0.15)] bg-white" style={{
+              borderTopLeftRadius: '100px',
+              borderTopRightRadius: '20px',
+              borderBottomRightRadius: '100px',
+              borderBottomLeftRadius: '20px',
+              opacity: 1
+            }}>
               <div className="relative w-full h-[420px] bg-gray-50 flex items-center justify-center">
                 <div className="text-center text-gray-400 text-sm font-medium">
                   Doctor measuring child height
@@ -66,8 +72,17 @@ const Hero: React.FC<HeroProps> = ({
               </div>
             </div>
             {/* Small overlay card showing weighing scale */}
-            <div className="absolute -bottom-8 -left-4 w-48 h-40 rounded-[32px] overflow-hidden shadow-lg bg-white">
-              <div className="relative w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 text-xs font-medium">
+            <div className="absolute -bottom-8 -left-4 w-48 h-40 overflow-hidden shadow-lg bg-white" style={{
+              borderTopLeftRadius: '20px',
+              borderTopRightRadius: '50px',
+              borderBottomRightRadius: '20px',
+              borderBottomLeftRadius: '50px',
+              transform: 'rotate(-180deg)',
+              opacity: 1
+            }}>
+              <div className="relative w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 text-xs font-medium" style={{
+                transform: 'rotate(180deg)'
+              }}>
                 Baby weighing scale
               </div>
             </div>
