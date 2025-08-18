@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -11,27 +12,44 @@ interface FeatureCardProps {
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => {
   return (
-    <div 
-      className="bg-white p-8 text-center"
-      style={{
-        borderTopLeftRadius: '100px',
-        borderTopRightRadius: '100px',
-        borderBottomRightRadius: '10px',
-        borderBottomLeftRadius: '10px',
-        opacity: 1,
-        border: '2px solid #9ECAD6'
-      }}
+    <motion.div 
+      className="bg-white p-8 text-center rounded-tl-[100px] rounded-tr-[100px] rounded-br-[10px] rounded-bl-[10px] opacity-100 border-2 border-[#9ECAD6] h-80 flex flex-col justify-between"
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      viewport={{ once: true }}
+      whileHover={{ scale: 1.05, y: -5 }}
     >
-      <div className="flex justify-center mb-6">
+      <motion.div 
+        className="flex justify-center mb-6"
+        initial={{ opacity: 0, scale: 0.8 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        viewport={{ once: true }}
+      >
         {icon}
+      </motion.div>
+      <div className="flex-grow flex flex-col justify-center">
+        <motion.h3 
+          className="text-base font-semibold text-gray-800 mb-3 leading-tight"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          viewport={{ once: true }}
+        >
+          {title}
+        </motion.h3>
+        <motion.p 
+          className="text-sm text-gray-600 leading-relaxed"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          viewport={{ once: true }}
+        >
+          {description}
+        </motion.p>
       </div>
-      <h3 className="text-base font-semibold text-gray-800 mb-3 leading-tight">
-        {title}
-      </h3>
-      <p className="text-sm text-gray-600 leading-relaxed">
-        {description}
-      </p>
-    </div>
+    </motion.div>
   );
 };
 
@@ -96,31 +114,68 @@ const Features: React.FC<FeaturesProps> = ({ className = '' }) => {
   ];
 
   return (
-    <section className={`py-20 px-6 lg:px-12 bg-white ${className}`}>
+    <motion.section 
+      className={`py-20 px-6 lg:px-12 bg-white ${className}`}
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true }}
+    >
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#9ECAD6] mb-4">
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <motion.h2 
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#9ECAD6] mb-4"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            viewport={{ once: true }}
+          >
             Deteksi Cepat & Akurat dengan CompViT
-          </h2>
-          <p className="text-lg text-gray-700 max-w-2xl mx-auto">
+          </motion.h2>
+          <motion.p 
+            className="text-lg text-gray-700 max-w-2xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            viewport={{ once: true }}
+          >
             Dengan teknologi Computer Vision dan IoT, CompViT mampu:
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
         {/* Feature Cards Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <motion.div 
+          className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          viewport={{ once: true }}
+        >
           {features.map((feature, index) => (
-            <FeatureCard
+            <motion.div
               key={index}
-              icon={feature.icon}
-              title={feature.title}
-              description={feature.description}
-            />
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              viewport={{ once: true }}
+            >
+              <FeatureCard
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 

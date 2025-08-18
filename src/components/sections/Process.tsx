@@ -2,39 +2,65 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 
 interface ProcessCardProps {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   description: string;
-  borderStyle: React.CSSProperties;
+  borderClass: string;
 }
 
-const ProcessCard: React.FC<ProcessCardProps> = ({ icon, title, subtitle, description, borderStyle }) => {
+const ProcessCard: React.FC<ProcessCardProps> = ({ icon, title, subtitle, description, borderClass }) => {
   return (
-    <div 
-      className="p-8 text-center"
-      style={{
-        background: 'linear-gradient(120deg, rgba(158, 202, 214, 0.7) 0.59%, rgba(255, 255, 255, 0.7) 38.12%, rgba(255, 255, 255, 0.7) 68.77%, rgba(158, 202, 214, 0.7) 99.41%)',
-        opacity: 1,
-        boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D',
-        ...borderStyle
-      }}
+    <motion.div 
+      className={`p-8 text-center bg-gradient-to-br from-[rgba(158,202,214,0.7)] via-[rgba(255,255,255,0.7)] to-[rgba(158,202,214,0.7)] opacity-100 shadow-[0px_1px_3px_1px_#00000026,0px_1px_2px_0px_#0000004D] h-96 flex flex-col justify-between ${borderClass}`}
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      viewport={{ once: true }}
+      whileHover={{ scale: 1.05, y: -10 }}
     >
-      <div className="flex justify-center mb-6">
+      <motion.div 
+        className="flex justify-center mb-6"
+        initial={{ opacity: 0, scale: 0.8 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        viewport={{ once: true }}
+      >
         {icon}
+      </motion.div>
+      <div className="flex-grow flex flex-col justify-center">
+        <motion.h3 
+          className="text-lg font-bold text-gray-800 mb-2"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          viewport={{ once: true }}
+        >
+          {title}
+        </motion.h3>
+        <motion.h4 
+          className="text-base font-semibold text-gray-700 mb-3"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          viewport={{ once: true }}
+        >
+          {subtitle}
+        </motion.h4>
+        <motion.p 
+          className="text-sm text-gray-600 leading-relaxed"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          viewport={{ once: true }}
+        >
+          {description}
+        </motion.p>
       </div>
-      <h3 className="text-lg font-bold text-gray-800 mb-2">
-        {title}
-      </h3>
-      <h4 className="text-base font-semibold text-gray-700 mb-3">
-        {subtitle}
-      </h4>
-      <p className="text-sm text-gray-600 leading-relaxed">
-        {description}
-      </p>
-    </div>
+    </motion.div>
   );
 };
 
@@ -57,12 +83,7 @@ const Process: React.FC<ProcessProps> = ({ className = '' }) => {
       title: "Ambil Gambar Anak",
       subtitle: "Sistem mengenali tubuh dengan sensor Computer Vision",
       description: "",
-      borderStyle: {
-        borderTopLeftRadius: '20px',
-        borderTopRightRadius: '100px',
-        borderBottomRightRadius: '20px',
-        borderBottomLeftRadius: '100px'
-      }
+      borderClass: "rounded-tl-[20px] rounded-tr-[100px] rounded-br-[20px] rounded-bl-[100px]"
     },
     {
       icon: (
@@ -77,9 +98,7 @@ const Process: React.FC<ProcessProps> = ({ className = '' }) => {
       title: "Pengolahan Otomatis",
       subtitle: "Data tinggi & berat dihitung secara akurat",
       description: "",
-      borderStyle: {
-        borderRadius: '20px'
-      }
+      borderClass: "rounded-[20px]"
     },
     {
       icon: (
@@ -94,40 +113,66 @@ const Process: React.FC<ProcessProps> = ({ className = '' }) => {
       title: "Lihat Hasil & Rekomendasi",
       subtitle: "Status gizi langsung ditampilkan",
       description: "",
-      borderStyle: {
-        borderTopLeftRadius: '100px',
-        borderTopRightRadius: '20px',
-        borderBottomRightRadius: '100px',
-        borderBottomLeftRadius: '20px'
-      }
+      borderClass: "rounded-tl-[100px] rounded-tr-[20px] rounded-br-[100px] rounded-bl-[20px]"
     }
   ];
 
   return (
-    <section className={`py-20 px-6 lg:px-12 bg-white ${className}`}>
+    <motion.section 
+      className={`py-20 px-6 lg:px-12 bg-white ${className}`}
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true }}
+    >
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#9ECAD6] mb-4">
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <motion.h2 
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#9ECAD6] mb-4"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            viewport={{ once: true }}
+          >
             Cara Kerja dalam 3 Langkah Mudah
-          </h2>
-        </div>
+          </motion.h2>
+        </motion.div>
 
         {/* Process Cards Grid */}
-        <div className="grid md:grid-cols-3 gap-8">
+        <motion.div 
+          className="grid md:grid-cols-3 gap-8"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          viewport={{ once: true }}
+        >
           {processes.map((process, index) => (
-            <ProcessCard
+            <motion.div
               key={index}
-              icon={process.icon}
-              title={process.title}
-              subtitle={process.subtitle}
-              description={process.description}
-              borderStyle={process.borderStyle}
-            />
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.2 }}
+              viewport={{ once: true }}
+            >
+              <ProcessCard
+                icon={process.icon}
+                title={process.title}
+                subtitle={process.subtitle}
+                description={process.description}
+                borderClass={process.borderClass}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 

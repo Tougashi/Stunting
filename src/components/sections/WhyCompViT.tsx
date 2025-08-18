@@ -2,31 +2,43 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 import Button from '../ui/Button';
 
 interface WhyCardProps {
   title: string;
   description: string;
-  borderStyle: React.CSSProperties;
 }
 
-const WhyCard: React.FC<WhyCardProps> = ({ title, description, borderStyle }) => {
+const WhyCard: React.FC<WhyCardProps> = ({ title, description }) => {
   return (
-    <div 
-      className="bg-white p-6 text-center h-40 flex flex-col justify-center"
-      style={{
-        boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D',
-        opacity: 1,
-        ...borderStyle
-      }}
+    <motion.div 
+      className="bg-white p-6 text-center h-40 flex flex-col justify-center shadow-[0px_1px_3px_1px_#00000026,0px_1px_2px_0px_#0000004D] opacity-100 rounded-tl-[100px] rounded-tr-[100px] rounded-br-[10px] rounded-bl-[10px]"
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      viewport={{ once: true }}
+      whileHover={{ scale: 1.05, y: -5 }}
     >
-      <h3 className="text-sm font-bold text-gray-800 mb-2 leading-tight">
+      <motion.h3 
+        className="text-sm font-bold text-gray-800 mb-2 leading-tight"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        viewport={{ once: true }}
+      >
         {title}
-      </h3>
-      <p className="text-xs text-gray-600 leading-relaxed">
+      </motion.h3>
+      <motion.p 
+        className="text-xs text-gray-600 leading-relaxed"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        viewport={{ once: true }}
+      >
         {description}
-      </p>
-    </div>
+      </motion.p>
+    </motion.div>
   );
 };
 
@@ -36,19 +48,11 @@ interface CTACardProps {
   subtitle: string;
   buttonText: string;
   onButtonClick?: () => void;
-  borderStyle: React.CSSProperties;
 }
 
-const CTACard: React.FC<CTACardProps> = ({ image, title, subtitle, buttonText, onButtonClick, borderStyle }) => {
+const CTACard: React.FC<CTACardProps> = ({ image, title, subtitle, buttonText, onButtonClick }) => {
   return (
-    <div 
-      className="relative overflow-hidden text-center h-96"
-      style={{
-        boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D',
-        opacity: 1,
-        ...borderStyle
-      }}
-    >
+    <div className="relative overflow-hidden text-center h-96 shadow-[0px_1px_3px_1px_#00000026,0px_1px_2px_0px_#0000004D] opacity-100 rounded-tl-[100px] rounded-tr-[100px] rounded-br-[20px] rounded-bl-[20px]">
       {/* Background Image */}
       <Image 
         src={image}
@@ -103,22 +107,14 @@ const WhyCompViT: React.FC<WhyCompViTProps> = ({ className = '', onStartDetectio
     }
   ];
 
-  const cardBorderStyle = {
-    borderTopLeftRadius: '100px',
-    borderTopRightRadius: '100px',
-    borderBottomRightRadius: '10px',
-    borderBottomLeftRadius: '10px'
-  };
-
-  const ctaBorderStyle = {
-    borderTopLeftRadius: '100px',
-    borderTopRightRadius: '100px',
-    borderBottomRightRadius: '20px',
-    borderBottomLeftRadius: '20px'
-  };
-
   return (
-    <section className={`wave-background min-h-screen py-20 px-6 lg:px-12 relative ${className}`}>
+    <motion.section 
+      className={`wave-background-bottom min-h-screen py-20 px-6 lg:px-12 relative ${className}`}
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true }}
+    >
       {/* Wave scallop edge at top */}
       <div className="wave-edge-top" aria-hidden="true">
         <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
@@ -128,67 +124,123 @@ const WhyCompViT: React.FC<WhyCompViTProps> = ({ className = '', onStartDetectio
       
       <div className="max-w-7xl mx-auto relative z-10 pt-32">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-8 leading-tight">
+        <motion.div 
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <motion.h2 
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-8 leading-tight"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            viewport={{ once: true }}
+          >
             Kenapa Harus<br />Menggunakan CompViT?
-          </h2>
-        </div>
+          </motion.h2>
+        </motion.div>
 
         {/* Why Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <motion.div 
+          className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          viewport={{ once: true }}
+        >
           {whyFeatures.map((feature, index) => (
-            <WhyCard
+            <motion.div
               key={index}
-              title={feature.title}
-              description={feature.description}
-              borderStyle={cardBorderStyle}
-            />
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              viewport={{ once: true }}
+            >
+              <WhyCard
+                title={feature.title}
+                description={feature.description}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* CTA Section */}
-        <div className="flex flex-col items-center space-y-8">
+        <motion.div 
+          className="flex flex-col items-center space-y-8"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          viewport={{ once: true }}
+        >
           {/* Image Card */}
-          <div className="w-full max-w-sm">
-            <div 
-              className="relative overflow-hidden h-64"
-              style={{
-                boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D',
-                opacity: 1,
-                ...ctaBorderStyle
-              }}
-            >
+          <motion.div 
+            className="w-full max-w-sm"
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            viewport={{ once: true }}
+            whileHover={{ scale: 1.05 }}
+          >
+            <div className="relative overflow-hidden h-64 opacity-100 rounded-tl-[100px] rounded-tr-[100px] rounded-br-[20px] rounded-bl-[20px]">
               <Image 
                 src="/image/icon/pengukuran-anak.png"
                 alt="Pengukuran Anak" 
                 fill
-                className="object-cover"
               />
             </div>
-          </div>
+          </motion.div>
           
           {/* Heading */}
-          <div className="text-center">
-            <h3 className="text-2xl font-bold text-white mb-2 leading-tight">
+          <motion.div 
+            className="text-center"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+            viewport={{ once: true }}
+          >
+            <motion.h3 
+              className="text-2xl font-bold text-white mb-2 leading-tight"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.8 }}
+              viewport={{ once: true }}
+            >
               Mulai Deteksi Dini, Wujudkan
-            </h3>
-            <h4 className="text-xl font-bold text-white">
+            </motion.h3>
+            <motion.h4 
+              className="text-xl font-bold text-white"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.9 }}
+              viewport={{ once: true }}
+            >
               Generasi Bebas Stunting
-            </h4>
-          </div>
+            </motion.h4>
+          </motion.div>
           
           {/* Button */}
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={onStartDetection}
-            className="!bg-white !text-black hover:!bg-gray-100 focus:ring-white shadow-md px-8 py-3 text-sm font-semibold tracking-wide rounded-full"
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1.0 }}
+            viewport={{ once: true }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            Mulai Deteksi Sekarang
-          </Button>
-        </div>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={onStartDetection}
+              className="!bg-white !text-black hover:!bg-gray-100 focus:ring-white shadow-md px-8 py-3 text-sm font-semibold tracking-wide rounded-full"
+            >
+              Mulai Deteksi Sekarang
+            </Button>
+          </motion.div>
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 

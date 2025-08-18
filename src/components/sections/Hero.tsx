@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 import Button from '../ui/Button';
 
 interface HeroProps {
@@ -24,26 +25,56 @@ const Hero: React.FC<HeroProps> = ({
   className = '',
 }) => {
   return (
-  <section className={`wave-background min-h-screen flex items-center pt-24 pb-40 px-6 lg:px-12 relative ${className}`}>
+  <motion.section 
+    className={`wave-background-top min-h-screen flex items-center pt-24 pb-40 px-6 lg:px-12 relative ${className}`}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.8 }}
+  >
       <div className="hero-container mx-auto w-full relative z-10">
         <div className="grid lg:grid-cols-2 gap-8 xl:gap-14 items-center">
           {/* Left Content */}
-          <div className="space-y-8 max-w-xl">
+          <motion.div 
+            className="space-y-8 max-w-xl"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
             {subtitle && (
-              <p className="text-[var(--color-primary)] font-semibold text-lg">
+              <motion.p 
+                className="text-[var(--color-primary)] font-semibold text-lg"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+              >
                 {subtitle}
-              </p>
+              </motion.p>
             )}
             
-            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight drop-shadow-sm">
+            <motion.h1 
+              className="text-4xl sm:text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight drop-shadow-sm"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+            >
               {title}
-            </h1>
+            </motion.h1>
             
-            <p className="text-base sm:text-lg text-white/90 leading-relaxed">
+            <motion.p 
+              className="text-base sm:text-lg text-white/90 leading-relaxed"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.7 }}
+            >
               {description}
-            </p>
+            </motion.p>
             
-            <div className="pt-2">
+            <motion.div 
+              className="pt-2"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.9 }}
+            >
               <Button
                 variant="primary"
                 size="lg"
@@ -52,41 +83,57 @@ const Hero: React.FC<HeroProps> = ({
               >
                 {buttonText}
               </Button>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
           {/* Right Content - Large main image with small overlay */}
-          <div className="relative flex justify-center lg:justify-start">
+          <motion.div 
+            className="relative flex justify-center lg:justify-start"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+          >
             {/* Main image container with doctor measuring child's height */}
-            <div className="relative w-[580px] max-w-full overflow-hidden shadow-[0_8px_40px_-10px_rgba(0,0,0,0.15)] bg-white" style={{
-              borderTopLeftRadius: '100px',
-              borderTopRightRadius: '20px',
-              borderBottomRightRadius: '100px',
-              borderBottomLeftRadius: '20px',
-              opacity: 1
-            }}>
+            <motion.div 
+              className="relative w-[580px] max-w-full overflow-hidden bg-white rounded-tl-[100px] rounded-tr-[20px] rounded-br-[100px] rounded-bl-[20px] opacity-100"
+              style={{
+                boxShadow: '0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.3)'
+              }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="relative w-full h-[420px] bg-gray-50 flex items-center justify-center">
-                <div className="text-center text-gray-400 text-sm font-medium">
-                  Doctor measuring child height
-                </div>
+                <Image 
+                  src="/image/icon/doctor-meausuring-child-height.jpg"
+                  alt="Doctor measuring child height"
+                  fill
+                  className="object-cover"
+                />
               </div>
-            </div>
+            </motion.div>
             {/* Small overlay card showing weighing scale */}
-            <div className="absolute -bottom-8 -left-4 w-48 h-40 overflow-hidden shadow-lg bg-white" style={{
-              borderTopLeftRadius: '20px',
-              borderTopRightRadius: '50px',
-              borderBottomRightRadius: '20px',
-              borderBottomLeftRadius: '50px',
-              transform: 'rotate(-180deg)',
-              opacity: 1
-            }}>
-              <div className="relative w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 text-xs font-medium" style={{
-                transform: 'rotate(180deg)'
-              }}>
-                Baby weighing scale
+            <motion.div 
+              className="absolute -bottom-8 -left-4 w-48 h-40 overflow-hidden bg-white rounded-tl-[20px] rounded-tr-[50px] rounded-br-[20px] rounded-bl-[50px] rotate-180 opacity-100"
+              style={{
+                boxShadow: '0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.3)'
+              }}
+              initial={{ opacity: 0, scale: 0.8, y: 50 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <div className="relative w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 text-xs font-medium rotate-180">
+                <Image 
+                  src="/image/icon/baby-weigt-scale.jpg"
+                  alt="Baby weighing scale"
+                  fill
+                  className="object-cover"
+                />
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
       {/* Wave scallop edge */}
@@ -95,7 +142,7 @@ const Hero: React.FC<HeroProps> = ({
           <path d="M0 60c60 0 60 60 120 60s60-60 120-60 60 60 120 60 60-60 120-60 60 60 120 60 60-60 120-60 60 60 120 60 60-60 120-60 60 60 120 60 60-60 120-60 60 60 120 60 60-60 120-60v60H0Z" />
         </svg>
       </div>
-    </section>
+    </motion.section>
   );
 };
 
