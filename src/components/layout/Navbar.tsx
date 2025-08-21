@@ -39,10 +39,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <nav 
-      className={`bg-[#EFFFFE] px-4 sm:px-6 lg:px-8 relative z-50 ${className}`}
-      style={{
-        boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D'
-      }}
+      className={`bg-[#EFFFFE] px-4 sm:px-6 lg:px-8 relative z-50 table-shadow ${className}`}
     >
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center h-16">

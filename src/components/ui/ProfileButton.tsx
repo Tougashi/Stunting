@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 
 interface ProfileButtonProps {
   profileImage?: string;
@@ -14,7 +15,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
   className = '',
 }) => {
   return (
-    <button className={`flex items-center space-x-2 bg-[var(--color-primary)] text-white px-4 py-2 rounded-full hover:bg-[#2c5d6b] transition-colors duration-200 ${className}`}>
+    <Link href="/profile" className={`flex items-center space-x-2 bg-teal-700 text-white px-4 py-2 rounded-full hover:bg-teal-800 transition-colors duration-200 ${className}`}>
       <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
         <img
           src={profileImage}
@@ -23,7 +24,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
         />
       </div>
       <span className="font-medium">{profileName}</span>
-    </button>
+    </Link>
   );
 };
 

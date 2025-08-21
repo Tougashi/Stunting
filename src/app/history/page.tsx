@@ -85,18 +85,25 @@ export default function HistoryPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen relative">
-        {/* Background Gradient */}
+      <div className="min-h-screen relative overflow-x-hidden">
+        {/* Background Gradient Top */}
         <div 
-          className="absolute inset-0 w-full h-72"
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-60 z-10"
           style={{
-            background: `radial-gradient(circle at center top, rgba(158, 202, 214, 1) 0%, rgba(158, 202, 214, 0.3) 30%, rgba(158, 202, 214, 0) 50%)`,
-            zIndex: 0
+            background: `radial-gradient(ellipse at center top, rgba(158, 202, 214, 0.6) 0%, rgba(158, 202, 214, 0.3) 30%, rgba(158, 202, 214, 0.1) 50%, transparent 70%)`
+          }}
+        />
+        
+        {/* Background Gradient Bottom Right */}
+        <div 
+          className="absolute bottom-0 right-0 w-96 h-96 z-0"
+          style={{
+            background: `linear-gradient(151.12deg, #FFFFFF 53.4%, #9ECAD6 172.54%)`
           }}
         />
         
         {/* Content */}
-        <div className="relative z-10 py-20 px-4 sm:px-6 lg:px-8">
+        <div className="relative z-20 py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
             <div className="text-center mb-12">

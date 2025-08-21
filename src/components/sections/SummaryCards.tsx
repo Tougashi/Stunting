@@ -13,10 +13,9 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ data }) => {
       {data.map((card, index) => (
         <div
           key={index}
-          className="relative rounded-2xl p-6 text-center"
+          className="relative rounded-2xl p-6 text-center table-shadow"
           style={{
-            background: card.bgGradient,
-            boxShadow: '0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.3)'
+            background: card.bgGradient
           }}
         >
           <div className="text-4xl font-bold text-gray-800 mb-2">

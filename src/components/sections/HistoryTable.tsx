@@ -102,10 +102,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
 
   return (
     <div 
-      className="bg-white rounded-2xl overflow-visible relative border border-gray-200"
-      style={{
-        boxShadow: '0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.3)'
-      }}
+      className="bg-white rounded-2xl overflow-visible relative border border-gray-200 table-shadow"
     >
       {/* Header dengan Search dan Filter */}
       <div className="p-6 border-b border-gray-200">
@@ -114,7 +111,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
           <div className="relative flex-shrink-0" ref={filterRef}>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[#2c5d6b] transition-colors whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 transition-colors whitespace-nowrap"
             >
               <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -155,8 +152,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                                 setSortOption({ field: 'date', direction: 'desc' });
                               }
                             }}
-                            className="w-4 h-4 border-2 border-gray-300 focus:ring-2 focus:ring-[#397789] focus:border-[#397789]"
-                            style={{ accentColor: '#397789' }}
+                            className="w-4 h-4 border-2 border-gray-300 focus:ring-2 focus:ring-teal-600 focus:border-teal-600 text-teal-600"
                           />
                           <span className="text-sm text-gray-700 whitespace-nowrap">{option.label}</span>
                         </label>
@@ -176,8 +172,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                             type="checkbox"
                             checked={option.checked}
                             onChange={() => toggleFilter('status', option.value)}
-                            className="w-4 h-4 rounded border-2 border-gray-300 focus:ring-2 focus:ring-[#397789] focus:border-[#397789]"
-                            style={{ accentColor: '#397789' }}
+                            className="w-4 h-4 rounded border-2 border-gray-300 focus:ring-2 focus:ring-teal-600 focus:border-teal-600 text-teal-600"
                           />
                           <span className="text-sm text-gray-700 whitespace-nowrap">{option.label}</span>
                         </label>
@@ -199,7 +194,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
             <input
               type="text"
               placeholder="Cari Pasien/Anak"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-700 focus:border-transparent"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -235,7 +230,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">
-                      <div className="h-10 w-10 rounded-full bg-[var(--color-primary)] flex items-center justify-center">
+                      <div className="h-10 w-10 rounded-full bg-teal-700 flex items-center justify-center">
                         <span className="text-sm font-medium text-white">
                           {record.name.charAt(0).toUpperCase()}
                         </span>
@@ -266,7 +261,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button 
                     onClick={() => onEdit?.(record)}
-                    className="text-[var(--color-primary)] hover:text-[#2c5d6b] mr-3"
+                    className="text-teal-700 hover:text-teal-800 mr-3"
                   >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />

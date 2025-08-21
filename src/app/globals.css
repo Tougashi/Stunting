@@ -48,6 +48,23 @@ body {
 .wave-edge-top svg { display:block; width:100%; height:120px; }
 .wave-edge-top path { fill:#ffffff; }
 
+/* Custom shadow for table */
+.table-shadow {
+  box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* Profile card shadow */
+.profile-card-shadow {
+  box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* Fallback avatar */
+.fallback-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Optional drop shadow of inner content above wave */
 .hero-container{position:relative;}
 
