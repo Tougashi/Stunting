@@ -2,12 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import ProfileButton from '../ui/ProfileButton';
 
 interface NavItem {
   label: string;
   href: string;
-  isActive?: boolean;
 }
 
 interface NavbarProps {
@@ -17,7 +17,7 @@ interface NavbarProps {
 }
 
 const defaultNavItems: NavItem[] = [
-  { label: 'Home', href: '/', isActive: true },
+  { label: 'Home', href: '/' },
   { label: 'Scan', href: '/scan' },
   { label: 'History', href: '/history' },
 ];
@@ -27,6 +27,16 @@ const Navbar: React.FC<NavbarProps> = ({
   navItems = defaultNavItems,
   className = '',
 }) => {
+  const pathname = usePathname();
+
+  const isActiveLink = (href: string) => {
+    if (!pathname) return false;
+    if (href === '/') {
+      return pathname === '/';
+    }
+    return pathname.startsWith(href);
+  };
+
   return (
     <nav 
       className={`bg-[#EFFFFE] px-4 sm:px-6 lg:px-8 relative z-50 ${className}`}
@@ -51,7 +61,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   key={index}
                   href={item.href}
                   className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
-                    item.isActive
+                    isActiveLink(item.href)
                       ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]'
                       : 'text-gray-600 hover:text-[var(--color-primary)]'
                   }`}
