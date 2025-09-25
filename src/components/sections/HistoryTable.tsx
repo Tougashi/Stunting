@@ -152,7 +152,10 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                                 setSortOption({ field: 'date', direction: 'desc' });
                               }
                             }}
-                            className="w-4 h-4 border-2 border-gray-300 focus:ring-2 focus:ring-teal-600 focus:border-teal-600 text-teal-600"
+                            className="w-4 h-4 border-gray-300 focus:ring-0 focus:ring-offset-0"
+                            style={{
+                              accentColor: '#407A81'
+                            }}
                           />
                           <span className="text-sm text-gray-700 whitespace-nowrap">{option.label}</span>
                         </label>
@@ -172,7 +175,10 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                             type="checkbox"
                             checked={option.checked}
                             onChange={() => toggleFilter('status', option.value)}
-                            className="w-4 h-4 rounded border-2 border-gray-300 focus:ring-2 focus:ring-teal-600 focus:border-teal-600 text-teal-600"
+                            className="w-4 h-4 rounded border-gray-300 focus:ring-0 focus:ring-offset-0"
+                            style={{
+                              accentColor: '#407A81'
+                            }}
                           />
                           <span className="text-sm text-gray-700 whitespace-nowrap">{option.label}</span>
                         </label>
