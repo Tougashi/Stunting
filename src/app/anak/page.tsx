@@ -161,11 +161,10 @@ export default function ScanPage() {
             {/* Header */}
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold text-black mb-4">
-                Pemindaian
+                Profil Anak
               </h1>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Silahkan Pilih Anak yang ingin anda lakukan pemindaian. Jika belum<br />
-                ada, lakukan Tambah Anak.
+                List data Anak yang sudah terdaftar.
               </p>
             </div>
 
