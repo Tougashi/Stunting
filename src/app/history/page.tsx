@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components';
 import { SummaryCards } from '@/components/sections/SummaryCards';
 import { SummaryCard, HistoryRecord } from '@/types/history';
 import Image from 'next/image';
 import { FiFilter, FiSearch, FiClock, FiArrowRightCircle } from 'react-icons/fi';
+import { useRouter } from 'next/navigation';
 
 // Data dummy untuk demo
 const summaryData: SummaryCard[] = [
@@ -36,57 +37,122 @@ const historyData: HistoryRecord[] = [
   {
     id: '1',
     name: 'Shopia Davis',
+    nik: '029102910920191',
     age: 1,
     gender: 'female',
     height: 75,
     weight: 10,
     status: 'stunting',
-    date: '2024-08-20'
+    date: '2024-08-20',
+    scanTime: '09:30 WIB',
+    imageUrl: '/image/icon/pengukuran-anak.jpg'
   },
   {
     id: '2',
     name: 'Emma Jhon',
+    nik: '029102910920192',
     age: 2,
     gender: 'female',
     height: 85,
     weight: 12,
     status: 'normal',
-    date: '2024-08-19'
+    date: '2024-08-19',
+    scanTime: '10:05 WIB',
+    imageUrl: '/image/icon/pengukuran-anak.jpg'
   },
   {
     id: '3',
     name: 'Liam Chen',
+    nik: '029102910920193',
     age: 3,
     gender: 'male',
     height: 90,
     weight: 14,
     status: 'beresiko',
-    date: '2024-08-18'
+    date: '2024-08-18',
+    scanTime: '14:20 WIB',
+    imageUrl: '/image/icon/pengukuran-anak.jpg'
   },
   {
     id: '4',
     name: 'Shopia Davis',
+    nik: '029102910920194',
     age: 1,
     gender: 'female',
     height: 75,
     weight: 10,
     status: 'stunting',
-    date: '2024-08-17'
+    date: '2024-08-17',
+    scanTime: '11:15 WIB',
+    imageUrl: '/image/icon/pengukuran-anak.jpg'
   }
 ];
 
 export default function HistoryPage() {
+  const router = useRouter();
   const [query, setQuery] = useState('');
+  const [sortOption, setSortOption] = useState('latest');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowFilters(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const toggleStatusFilter = (status: string) => {
+    setStatusFilter(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
 
   const filtered = useMemo(() => {
-    return historyData.filter((it) => it.name.toLowerCase().includes(query.toLowerCase()));
-  }, [query]);
+    let result = historyData.filter((it) => {
+      const matchesSearch = it.name.toLowerCase().includes(query.toLowerCase());
+      const matchesStatus = statusFilter.length === 0 || statusFilter.includes(it.status);
+      return matchesSearch && matchesStatus;
+    });
+
+    // Sort data
+    result.sort((a, b) => {
+      switch (sortOption) {
+        case 'az':
+          return a.name.localeCompare(b.name);
+        case 'za':
+          return b.name.localeCompare(a.name);
+        case 'age':
+          return a.age - b.age;
+        case 'latest':
+        default:
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+      }
+    });
+
+    return result;
+  }, [query, statusFilter, sortOption]);
+
   const handleEdit = (record: HistoryRecord) => {
     console.log('Edit record:', record);
   };
 
   const handleDelete = (id: string) => {
     console.log('Delete record:', id);
+  };
+
+  const handleViewDetail = (record: HistoryRecord) => {
+    router.push(`/history/${record.id}`);
   };
 
   return (
@@ -125,40 +191,118 @@ export default function HistoryPage() {
             <SummaryCards data={summaryData} />
 
             {/* Filter + Search + List */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <button className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#E7F5F7] text-gray-700">
-                  <FiFilter />
-                  <span className="text-sm font-medium">Filter by</span>
-                </button>
-                <div className="relative flex-1">
-                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                {/* Filter Button */}
+                <div className="relative" ref={filterRef}>
+                  <button 
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-white cursor-pointer hover:opacity-90 transition-opacity"
+                    style={{ backgroundColor: 'rgba(57, 119, 137, 1)' }}
+                  >
+                    <FiFilter size={18} />
+                    <span className="text-sm font-medium">Filter by</span>
+                  </button>
+
+                  {/* Filter Dropdown Content */}
+                  {showFilters && (
+                    <div 
+                      className={`absolute left-0 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] overflow-auto max-h-[400px] ${
+                        filtered.length <= 3 ? 'bottom-full mb-2' : 'top-full mt-2'
+                      }`}
+                    >
+                      <div className="p-4">
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-3">Urutkan:</label>
+                          <div className="space-y-2">
+                            {[
+                              { value: 'az', label: 'A→Z' },
+                              { value: 'za', label: 'Z→A' },
+                              { value: 'age', label: 'Usia Anak' },
+                              { value: 'latest', label: 'Pemindaian Terbaru' }
+                            ].map((option) => (
+                              <label key={option.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors">
+                                <input
+                                  type="radio"
+                                  name="sortFilter"
+                                  value={option.value}
+                                  checked={sortOption === option.value}
+                                  onChange={(e) => setSortOption(e.target.value)}
+                                  className="w-4 h-4 border-gray-300 focus:ring-0 focus:ring-offset-0"
+                                  style={{
+                                    accentColor: '#397789'
+                                  }}
+                                />
+                                <span className="text-sm text-gray-700 whitespace-nowrap">{option.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-3">Status:</label>
+                          <div className="space-y-2">
+                            {[
+                              { value: 'normal', label: 'Sehat' },
+                              { value: 'beresiko', label: 'Monitor' },
+                              { value: 'stunting', label: 'Kritis' }
+                            ].map((option) => (
+                              <label key={option.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors">
+                                <input
+                                  type="checkbox"
+                                  checked={statusFilter.includes(option.value)}
+                                  onChange={() => toggleStatusFilter(option.value)}
+                                  className="w-4 h-4 rounded border-gray-300 focus:ring-0 focus:ring-offset-0"
+                                  style={{
+                                    accentColor: '#397789'
+                                  }}
+                                />
+                                <span className="text-sm text-gray-700 whitespace-nowrap">{option.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Search Input */}
+                <div className="relative w-full sm:w-auto">
+                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                   <input
                     type="text"
                     placeholder="Cari Pasien/Anak"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-200 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent"
+                    className="w-full sm:w-80 pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#397789] focus:border-transparent outline-none"
                   />
                 </div>
               </div>
 
-              <div className="mt-4 divide-y">
+              <div className="space-y-3">
                 {filtered.map((row) => (
-                  <div key={row.id} className="py-4 flex items-center gap-4">
+                  <div key={row.id} className="py-4 flex items-center gap-4 border-b border-gray-100 last:border-b-0">
                     {/* avatar */}
-                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#9CA3AF"/></svg>
+                    <div className="w-12 h-12 rounded-full bg-[#E5F3F5] flex items-center justify-center text-[#397789] shrink-0">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+                      </svg>
                     </div>
 
                     {/* name & meta */}
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 text-sm truncate">{row.name}</div>
-                      <div className="text-xs text-gray-500 flex items-center gap-3 mt-0.5">
-                        {/* age below name (no gender) */}
-                        <span>{row.age} Tahun</span>
+                      <div className="font-bold text-gray-900 text-base mb-1">{row.name}</div>
+                      <div className="text-sm text-gray-500 flex items-center gap-3">
+                        <span className="flex items-center gap-1">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
+                            <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
+                          </svg>
+                          {row.age} Tahun
+                        </span>
                         <span className="inline-flex items-center gap-1">
-                          <FiClock />
+                          <FiClock size={14} />
                           2 Jam yang lalu
                         </span>
                       </div>
@@ -166,36 +310,75 @@ export default function HistoryPage() {
 
                     {/* height pill */}
                     <div className="shrink-0">
-                      <div className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 bg-[#F1F8F9]">
-                        <Image src="/image/icon/tinggi-badan.svg" alt="tinggi" width={20} height={20} />
-                        <span className="text-xs font-medium text-[#407A81]">{row.height} cm</span>
+                      <div 
+                        className="flex items-center justify-center gap-2.5"
+                        style={{
+                          width: '140px',
+                          height: '56px',
+                          borderRadius: '16px',
+                          border: '1px solid rgba(57, 119, 137, 1)',
+                          backgroundColor: 'rgba(239, 255, 254, 1)'
+                        }}
+                      >
+                        <Image 
+                          src="/image/icon/tinggi-badan.svg" 
+                          alt="tinggi" 
+                          width={31} 
+                          height={38}
+                          style={{ width: '31px', height: '38px' }}
+                        />
+                        <span className="text-base font-semibold text-[#397789]">{row.height} cm</span>
                       </div>
                     </div>
 
                     {/* weight pill */}
                     <div className="shrink-0">
-                      <div className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 bg-[#F1F8F9]">
-                        <Image src="/image/icon/berat-badan.svg" alt="berat" width={20} height={20} />
-                        <span className="text-xs font-medium text-[#407A81]">{row.weight} Kg</span>
+                      <div 
+                        className="flex items-center justify-center gap-2.5"
+                        style={{
+                          width: '140px',
+                          height: '56px',
+                          borderRadius: '16px',
+                          border: '1px solid rgba(57, 119, 137, 1)',
+                          backgroundColor: 'rgba(239, 255, 254, 1)'
+                        }}
+                      >
+                        <Image 
+                          src="/image/icon/berat-badan.svg" 
+                          alt="berat" 
+                          width={20} 
+                          height={38}
+                          style={{ width: '20px', height: '38px' }}
+                        />
+                        <span className="text-base font-semibold text-[#397789]">{row.weight} Kg</span>
                       </div>
                     </div>
 
                     {/* status */}
-                    <div className="shrink-0">
+                    <div className="shrink-0" style={{ width: '100px' }}>
                       {row.status === 'normal' && (
-                        <span className="px-3 py-1 rounded-full text-xs bg-green-100 text-green-600">Sehat</span>
+                        <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#E8F5E9] text-[#4CAF50]">
+                          Sehat
+                        </span>
                       )}
                       {row.status === 'beresiko' && (
-                        <span className="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">Beresiko</span>
+                        <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFF9E6] text-[#FFA726]">
+                          Beresiko
+                        </span>
                       )}
                       {row.status === 'stunting' && (
-                        <span className="px-3 py-1 rounded-full text-xs bg-red-100 text-red-600">Stunting</span>
+                        <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFEBEE] text-[#EF5350]">
+                          Stunting
+                        </span>
                       )}
                     </div>
 
                     {/* action button - arrow circle right */}
-                    <button className="ml-2 shrink-0 w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-50">
-                      <FiArrowRightCircle />
+                    <button 
+                      onClick={() => handleViewDetail(row)}
+                      className="shrink-0 w-10 h-10 rounded-full border-2 border-[#397789] flex items-center justify-center text-[#397789] hover:bg-[#397789] hover:text-white transition-colors cursor-pointer"
+                    >
+                      <FiArrowRightCircle size={20} />
                     </button>
                   </div>
                 ))}

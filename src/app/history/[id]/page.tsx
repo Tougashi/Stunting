@@ -3,42 +3,103 @@
 import React, { useState } from 'react';
 import { Layout } from '@/components';
 import { FiArrowLeft, FiTrash2 } from 'react-icons/fi';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 
-export default function ResultPage() {
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const router = useRouter();
-  const searchParams = useSearchParams();
+// Mock data - in real app this would come from API/database
+const getRecordById = (id: string) => {
+  const records = [
+    {
+      id: '1',
+      name: 'Shopia Davis',
+      nik: '029102910920191',
+      age: 1,
+      gender: 'female',
+      height: 75,
+      weight: 10,
+      status: 'stunting',
+      date: '2024-08-20',
+      scanTime: '09:30 WIB',
+      imageUrl: '/image/icon/pengukuran-anak.jpg'
+    },
+    {
+      id: '2',
+      name: 'Emma Jhon',
+      nik: '029102910920192',
+      age: 2,
+      gender: 'female',
+      height: 85,
+      weight: 12,
+      status: 'normal',
+      date: '2024-08-19',
+      scanTime: '10:05 WIB',
+      imageUrl: '/image/icon/pengukuran-anak.jpg'
+    },
+    {
+      id: '3',
+      name: 'Liam Chen',
+      nik: '029102910920193',
+      age: 3,
+      gender: 'male',
+      height: 90,
+      weight: 14,
+      status: 'beresiko',
+      date: '2024-08-18',
+      scanTime: '14:20 WIB',
+      imageUrl: '/image/icon/pengukuran-anak.jpg'
+    },
+    {
+      id: '4',
+      name: 'Shopia Davis',
+      nik: '029102910920194',
+      age: 1,
+      gender: 'female',
+      height: 75,
+      weight: 10,
+      status: 'stunting',
+      date: '2024-08-17',
+      scanTime: '11:15 WIB',
+      imageUrl: '/image/icon/pengukuran-anak.jpg'
+    }
+  ];
+  
+  return records.find(r => r.id === id);
+};
 
-  // Mock data - in real app this would come from props or API
-  const childData = {
-    name: 'Emma Jhon',
-    nik: '029102910920192',
-    age: '2 Tahun 2 Bulan',
-    gender: 'Laki Laki',
-    scanDate: '02 September 2025',
-    scanTime: '10:05 WIB',
-    height: '28,5 cm',
-    weight: '1,2 kg',
-    status: 'Pertumbuhan Anak Sehat',
-    statusColor: 'green'
-  };
+export default function HistoryDetailPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params?.id as string;
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  
+  const record = id ? getRecordById(id) : null;
+
+  if (!record) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Data tidak ditemukan</h1>
+            <button
+              onClick={() => router.push('/history')}
+              className="text-[#407A81] hover:underline cursor-pointer"
+            >
+              Kembali ke Riwayat
+            </button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   const handleBack = () => {
-    router.back();
-  };
-
-  const handleSave = () => {
-    console.log('Saving result...');
-    // TODO: Implement save functionality
     router.push('/history');
   };
 
   const handleDelete = () => {
-    console.log('Deleting result...');
+    console.log('Deleting record:', id);
     // TODO: Implement delete functionality
-    router.back();
+    router.push('/history');
   };
 
   const handleDetailLengkap = () => {
@@ -57,7 +118,7 @@ export default function ResultPage() {
               className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors cursor-pointer"
             >
               <FiArrowLeft className="w-5 h-5" />
-              <span className="font-medium">Anak</span>
+              <span className="font-medium">Riwayat Anak</span>
             </button>
           </div>
 
@@ -78,7 +139,7 @@ export default function ResultPage() {
                     <div className="relative w-full h-96 rounded-xl overflow-hidden shadow-lg">
                       {/* Captured image */}
                       <Image
-                        src="/image/icon/pengukuran-anak.jpg"
+                        src={record.imageUrl || "/image/icon/pengukuran-anak.jpg"}
                         alt="Hasil pengukuran"
                         fill
                         className="object-cover"
@@ -105,14 +166,14 @@ export default function ResultPage() {
                 <div className="space-y-4">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                      {childData.name}
+                      {record.name}
                     </h2>
                     
                     <div className="space-y-4">
                       <div>
                         <span className="text-gray-400 font-medium text-sm mb-2 block">NIK Anak</span>
                         <div className="bg-[#F1F8F9] rounded-lg px-4 py-3">
-                          <span className="font-semibold text-gray-900 text-sm">{childData.nik}</span>
+                          <span className="font-semibold text-gray-900 text-sm">{record.nik}</span>
                         </div>
                       </div>
                       
@@ -120,13 +181,15 @@ export default function ResultPage() {
                         <div>
                           <span className="text-gray-400 font-medium text-sm mb-2 block">Usia Bayi saat ini</span>
                           <div className="bg-[#F1F8F9] rounded-lg px-4 py-3">
-                            <span className="font-semibold text-gray-900 text-sm">{childData.age}</span>
+                            <span className="font-semibold text-gray-900 text-sm">{record.age} Tahun</span>
                           </div>
                         </div>
                         <div>
                           <span className="text-gray-400 font-medium text-sm mb-2 block">Jenis Kelamin</span>
                           <div className="bg-[#F1F8F9] rounded-lg px-4 py-3">
-                            <span className="font-semibold text-gray-900 text-sm">{childData.gender}</span>
+                            <span className="font-semibold text-gray-900 text-sm">
+                              {record.gender === 'male' ? 'Laki-laki' : 'Perempuan'}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -135,10 +198,16 @@ export default function ResultPage() {
                         <span className="text-gray-400 font-medium text-sm mb-2 block">Waktu Pemeriksaan</span>
                         <div className="flex items-center gap-3">
                           <div className="bg-[#F1F8F9] rounded-lg px-4 py-3 flex-1">
-                            <span className="font-semibold text-gray-900 text-sm">{childData.scanDate}</span>
+                            <span className="font-semibold text-gray-900 text-sm">
+                              {new Date(record.date).toLocaleDateString('id-ID', {
+                                day: '2-digit',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
+                            </span>
                           </div>
                           <div className="bg-[#9ECAD6] text-white rounded-lg px-4 py-3 text-center min-w-[120px]">
-                            <span className="font-medium text-sm">{childData.scanTime}</span>
+                            <span className="font-medium text-sm">{record.scanTime}</span>
                           </div>
                         </div>
                       </div>
@@ -160,7 +229,7 @@ export default function ResultPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600 mb-2">Tinggi Badan</p>
-                        <p className="text-4xl font-bold text-[#407A81]">{childData.height}</p>
+                        <p className="text-4xl font-bold text-[#407A81]">{record.height} cm</p>
                       </div>
                       <div className="w-20 h-20 flex items-center justify-center p-3">
                         <Image
@@ -178,7 +247,7 @@ export default function ResultPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600 mb-2">Berat Badan</p>
-                        <p className="text-4xl font-bold text-[#407A81]">{childData.weight}</p>
+                        <p className="text-4xl font-bold text-[#407A81]">{record.weight} kg</p>
                       </div>
                       <div className="w-20 h-20 flex items-center justify-center p-3">
                         <Image
@@ -198,8 +267,17 @@ export default function ResultPage() {
                   
                   <div className="flex items-center justify-center gap-6 mb-6">
                     <div className="flex-1 max-w-lg">
-                      <div className="bg-green-500 text-white rounded-full py-4 px-8 shadow-lg">
-                        <span className="font-semibold text-lg">{childData.status}</span>
+                      <div className={`
+                        text-white rounded-full py-4 px-8 shadow-lg
+                        ${record.status === 'normal' ? 'bg-green-500' : ''}
+                        ${record.status === 'beresiko' ? 'bg-yellow-500' : ''}
+                        ${record.status === 'stunting' ? 'bg-red-500' : ''}
+                      `}>
+                        <span className="font-semibold text-lg">
+                          {record.status === 'normal' && 'Pertumbuhan Anak Sehat'}
+                          {record.status === 'beresiko' && 'Pertumbuhan Anak Beresiko'}
+                          {record.status === 'stunting' && 'Pertumbuhan Anak Stunting'}
+                        </span>
                       </div>
                     </div>
                     <button
@@ -220,10 +298,10 @@ export default function ResultPage() {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-10">
             <button
-              onClick={handleSave}
+              onClick={handleBack}
               className="bg-[#407A81] text-white py-4 px-8 rounded-xl hover:bg-[#326269] transition-colors font-semibold text-lg shadow-lg cursor-pointer"
             >
-              Simpan
+              Kembali
             </button>
             <button
               onClick={handleDelete}
@@ -246,7 +324,7 @@ export default function ResultPage() {
             {/* Image */}
             <div className="relative w-full h-72 md:h-80 rounded-xl overflow-hidden shadow-md mb-6">
               <Image
-                src="/image/icon/pengukuran-anak.jpg"
+                src={record.imageUrl || "/image/icon/pengukuran-anak.jpg"}
                 alt="Hasil pengukuran"
                 fill
                 className="object-cover"
@@ -259,7 +337,7 @@ export default function ResultPage() {
                 <p className="text-base text-gray-600 mb-3 text-center font-medium">Tinggi Badan</p>
                 <div className="flex items-center justify-between">
                   <div className="w-28"></div>
-                  <p className="text-4xl font-bold text-[#407A81] -mt-1">{childData.height}</p>
+                  <p className="text-4xl font-bold text-[#407A81] -mt-1">{record.height} cm</p>
                   <Image src="/image/icon/tinggi-badan.svg" alt="Tinggi" width={112} height={112} className="w-28 h-28" />
                 </div>
               </div>
@@ -267,7 +345,7 @@ export default function ResultPage() {
                 <p className="text-base text-gray-600 mb-3 text-center font-medium">Berat Badan</p>
                 <div className="flex items-center justify-between">
                   <Image src="/image/icon/berat-badan.svg" alt="Berat" width={112} height={112} className="w-28 h-28" />
-                  <p className="text-4xl font-bold text-[#407A81] -mt-1">{childData.weight}</p>
+                  <p className="text-4xl font-bold text-[#407A81] -mt-1">{record.weight} kg</p>
                   <div className="w-28"></div>
                 </div>
               </div>

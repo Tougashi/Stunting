@@ -80,7 +80,7 @@ const Navbar: React.FC<NavbarProps> = ({
           <div className="sm:hidden">
             <button
               type="button"
-              className="text-gray-600 hover:text-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] p-2"
+              className="text-gray-600 hover:text-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] p-2 cursor-pointer"
               aria-label="Open menu"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -2,12 +2,14 @@
 export interface HistoryRecord {
   id: string;
   name: string;
+  nik?: string;
   age: number;
   gender: 'male' | 'female';
   height: number;
   weight: number;
   status: 'normal' | 'beresiko' | 'stunting';
   date: string;
+  scanTime?: string;
   imageUrl?: string;
 }
 

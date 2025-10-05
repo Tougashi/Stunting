@@ -15,7 +15,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
   className = '',
 }) => {
   return (
-    <Link href="/profile" className={`flex items-center space-x-2 bg-teal-700 text-white px-4 py-2 rounded-full hover:bg-teal-800 transition-colors duration-200 ${className}`}>
+    <Link href="/profile" className={`flex items-center space-x-2 bg-teal-700 text-white px-4 py-2 rounded-full hover:bg-teal-800 transition-colors duration-200 cursor-pointer ${className}`}>
       <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
         <img
           src={profileImage}

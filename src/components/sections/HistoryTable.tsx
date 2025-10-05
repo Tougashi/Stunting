@@ -111,7 +111,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
           <div className="relative flex-shrink-0" ref={filterRef}>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 transition-colors whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 transition-colors whitespace-nowrap cursor-pointer"
             >
               <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -267,7 +267,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button 
                     onClick={() => onEdit?.(record)}
-                    className="text-teal-700 hover:text-teal-800 mr-3"
+                    className="text-teal-700 hover:text-teal-800 mr-3 cursor-pointer"
                   >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
