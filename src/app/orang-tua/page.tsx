@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components';
 import Image from 'next/image';
 import { FiFilter, FiSearch, FiMoreVertical, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
@@ -30,13 +30,42 @@ export default function OrangTuaPage() {
   const [query, setQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
+  const [sortOption, setSortOption] = useState<'latest'|'az'|'za'|'children'>('latest');
+  const [showFilters, setShowFilters] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowFilters(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const filtered = useMemo(() => {
-    return parents.filter(p =>
+    const list = parents.filter(p =>
       `${p.fatherName} ${p.motherName}`.toLowerCase().includes(query.toLowerCase()) ||
       p.nik.includes(query)
     );
-  }, [query]);
+
+    list.sort((a, b) => {
+      switch (sortOption) {
+        case 'az':
+          return a.fatherName.localeCompare(b.fatherName);
+        case 'za':
+          return b.fatherName.localeCompare(a.fatherName);
+        case 'children':
+          return b.childrenCount - a.childrenCount;
+        case 'latest':
+        default:
+          return parseInt(b.id) - parseInt(a.id);
+      }
+    });
+
+    return list;
+  }, [query, sortOption]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -81,10 +110,30 @@ export default function OrangTuaPage() {
                   <button onClick={() => window.location.href = '/orang-tua/tambah'} className="px-3 sm:px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] font-medium text-sm sm:text-base w-full sm:w-fit">
                     Tambah Orang Tua
                   </button>
-                  <button className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-sm sm:text-base w-full sm:w-fit">
-                    <FiFilter className="text-gray-600" size={16} />
-                    <span className="text-gray-700">Filter by</span>
-                  </button>
+                  <div className="relative" ref={filterRef}>
+                    <button 
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-sm sm:text-base w-full sm:w-fit"
+                    >
+                      <FiFilter className="text-gray-600" size={16} />
+                      <span className="text-gray-700">Filter by</span>
+                    </button>
+                    {showFilters && (
+                      <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] max-w-[calc(100vw-2rem)] overflow-hidden">
+                        <div className="p-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-3">Urutkan:</label>
+                          <div className="space-y-2">
+                            {[{value:'latest',label:'Terbaru'},{value:'az',label:'Nama A-Z'},{value:'za',label:'Nama Z-A'},{value:'children',label:'Jumlah Anak'}].map((opt) => (
+                              <label key={opt.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors">
+                                <input type="radio" name="sortFilter" value={opt.value} checked={sortOption===opt.value as any} onChange={(e)=>setSortOption(e.target.value as any)} className="w-4 h-4 border-gray-300 focus:ring-0 focus:ring-offset-0" style={{accentColor:'#407A81'}} />
+                                <span className="text-sm text-gray-700 whitespace-nowrap">{opt.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="relative flex-1 min-w-[200px] sm:min-w-[240px]">

@@ -80,9 +80,11 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Profile Button - Hidden on mobile */}
+          {/* Login Button - Hidden on mobile */}
           <div className="hidden sm:flex flex-shrink-0">
-            <ProfileButton />
+            <Link href="/login" className="px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] text-sm font-medium">
+              Login
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -123,10 +125,12 @@ const Navbar: React.FC<NavbarProps> = ({
                 </Link>
               ))}
               
-              {/* Profile Button in Mobile Menu */}
+              {/* Login in Mobile Menu */}
               <div className="pt-4 border-t border-gray-200">
                 <div className="px-3 py-2">
-                  <ProfileButton />
+                  <Link href="/login" onClick={closeMobileMenu} className="block w-full text-center px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] text-base font-medium">
+                    Login
+                  </Link>
                 </div>
               </div>
             </div>

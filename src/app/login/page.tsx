@@ -1,0 +1,80 @@
+'use client';
+
+import React, { useState } from 'react';
+import { Layout } from '@/components';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    // TODO: integrate API
+    setTimeout(() => {
+      setLoading(false);
+      router.push('/');
+    }, 600);
+  };
+
+  return (
+    <Layout>
+      <div className="min-h-screen relative overflow-x-hidden">
+        <div className="relative z-20 min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-md -mt-18 md:-mt-18">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8" style={{ boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D' }}>
+              <h1 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-2">Masuk</h1>
+              <p className="text-center text-gray-600 mb-6">Silakan login untuk melanjutkan</p>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="nama@email.com"
+                    required
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Kata Sandi</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none pr-12"
+                    />
+                    <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute inset-y-0 right-0 px-3 text-[#407A81]">
+                      {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} className="w-full bg-[#407A81] text-white py-3 rounded-lg hover:bg-[#326269] transition-colors font-semibold disabled:opacity-50">
+                  {loading ? 'Memproses...' : 'Masuk'}
+                </button>
+              </form>
+
+              <div className="text-center text-sm text-gray-600 mt-6">
+                Belum punya akun?{' '}
+                <Link href="/register" className="text-[#407A81] font-semibold hover:underline">Daftar</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+}
+
+

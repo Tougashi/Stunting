@@ -32,6 +32,8 @@ export default function TambahAnakPage() {
   const [sortOption, setSortOption] = useState('latest');
   const [showFilters, setShowFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -70,6 +72,14 @@ export default function TambahAnakPage() {
 
     return results;
   }, [query, sortOption]);
+
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filtered.slice(startIndex, endIndex);
+  }, [filtered, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
   const handleSelectParent = (parentId: string) => {
     // Navigate to form tambah anak with parent ID
@@ -167,13 +177,55 @@ export default function TambahAnakPage() {
 
             {/* Grid Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-              {filtered.map((p) => (
+              {paginatedData.map((p) => (
                 <ParentCard key={p.id} parent={p} onSelect={() => handleSelectParent(p.id)} />
               ))}
               {filtered.length === 0 && (
                 <div className="col-span-full text-center text-gray-500 py-10">Tidak ada data</div>
               )}
             </div>
+
+            {totalPages > 1 && (
+              <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-600">
+                  Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filtered.length)} dari {filtered.length} data
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((p)=>Math.max(1, p-1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Prev
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) pageNum = i + 1;
+                      else if (currentPage <= 3) pageNum = i + 1;
+                      else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                      else pageNum = currentPage - 2 + i;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-3 py-2 rounded-md text-sm font-medium ${currentPage === pageNum ? 'bg-[#407A81] text-white' : 'border border-gray-200 bg-white hover:bg-gray-50 text-gray-700'}`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage((p)=>Math.min(totalPages, p+1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -190,8 +242,10 @@ function ParentCard({ parent, onSelect }: { parent: ParentProfile; onSelect: () 
     >
       {/* Father row */}
       <div className="flex items-center gap-3">
-        <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
-          <Image src={parent.fatherImage} alt={`Foto ${parent.fatherName}`} fill className="object-cover" />
+        <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+          </svg>
         </div>
         <div className="min-w-0">
           <div className="text-lg font-bold text-gray-900 leading-tight truncate">{parent.fatherName}</div>
@@ -200,8 +254,10 @@ function ParentCard({ parent, onSelect }: { parent: ParentProfile; onSelect: () 
 
       {/* Mother row */}
       <div className="flex items-center gap-3 mt-3">
-        <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
-          <Image src={parent.motherImage} alt={`Foto ${parent.motherName}`} fill className="object-cover" />
+        <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+          </svg>
         </div>
         <div className="min-w-0">
           <div className="text-lg font-bold text-gray-900 leading-tight truncate">{parent.motherName}</div>
