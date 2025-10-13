@@ -184,7 +184,28 @@ const scanHistoryData: { [key: string]: ScanHistoryRecord[] } = {
 };
 
 const getChildScanHistory = (childId: string): ScanHistoryRecord[] => {
-  return scanHistoryData[childId] || [];
+  const existing = scanHistoryData[childId] || [];
+  if (existing.length >= 3) return existing;
+  const padded: ScanHistoryRecord[] = [...existing];
+  const seed: ScanHistoryRecord = existing[0] || {
+    id: `scan-${childId}-seed`,
+    childId,
+    age: 2,
+    height: 28,
+    weight: 1.2,
+    status: 'normal',
+    date: '2024-08-20',
+    timeAgo: '2 Jam yang lalu',
+  };
+  while (padded.length < 3) {
+    const n = padded.length + 1;
+    padded.push({
+      ...seed,
+      id: `scan-${childId}-${n}`,
+      timeAgo: `${n} Jam yang lalu`,
+    });
+  }
+  return padded;
 };
 
 export default function ProfileAnakPage() {
@@ -194,6 +215,7 @@ export default function ProfileAnakPage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
   
   const child = getChildData(childId);
   const scanHistory = getChildScanHistory(childId);
@@ -218,7 +240,7 @@ export default function ProfileAnakPage() {
 
   const handleEdit = () => {
     setShowDropdown(false);
-    router.push(`/anak/edit/${childId}`);
+    setIsEditing(true);
   };
 
   const handleDelete = () => {
@@ -261,7 +283,7 @@ export default function ProfileAnakPage() {
                 onClick={handleBack}
                 className="text-gray-700 hover:text-gray-900 transition-colors"
               >
-                <FiArrowLeft size={24} />
+                <FiArrowLeft size={20} />
               </button>
               <h1 className="text-xl font-semibold text-gray-900">Anak</h1>
             </div>
@@ -304,10 +326,10 @@ export default function ProfileAnakPage() {
               </div>
 
               {/* Profile Content */}
-              <div className="px-8 pb-8">
+              <div className="px-5 sm:px-8 pb-6 sm:pb-8">
                 {/* Photo and Name */}
-                <div className="flex flex-col items-center mb-10">
-                  <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mb-5">
+                <div className="flex flex-col items-center mb-8 sm:mb-10">
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mb-4 sm:mb-5">
                     {child.photo ? (
                       <Image
                         src={child.photo}
@@ -322,117 +344,145 @@ export default function ProfileAnakPage() {
                       </svg>
                     )}
                   </div>
-                  <h3 className="text-2xl font-semibold text-gray-900 mb-2">{child.name}</h3>
-                  <p className="text-lg text-gray-600">{child.gender}</p>
-                  <p className="text-lg text-gray-600">Umur : {child.age} tahun</p>
+                  {isEditing ? (
+                    <div className="w-full max-w-md grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="sm:col-span-2">
+                        <label className="text-xs text-gray-500 mb-1 block">Nama Anak</label>
+                        <input defaultValue={child.name} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-sm sm:text-base" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Jenis Kelamin</label>
+                        <select defaultValue={child.gender} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-sm sm:text-base">
+                          <option>Laki Laki</option>
+                          <option>Perempuan</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Umur (tahun)</label>
+                        <input type="number" defaultValue={child.age} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-sm sm:text-base" />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 sm:mb-2 text-center">{child.name}</h3>
+                      <p className="text-base sm:text-lg text-gray-600">{child.gender}</p>
+                      <p className="text-base sm:text-lg text-gray-600">Umur : {child.age} tahun</p>
+                    </>
+                  )}
                 </div>
 
                 {/* Information Sections */}
-                <div className="space-y-10">
+                <div className="space-y-8 sm:space-y-10">
                   {/* Nomor Kartu Keluarga Section */}
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-5">Nomor Kartu Keluarga</h4>
-                    <div className="grid grid-cols-2 gap-8">
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-5">Nomor Kartu Keluarga</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Nomor KK</label>
-                        <p className="text-lg text-gray-900">{child.nomorKK}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Nomor KK</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.nomorKK}</p>
                       </div>
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">NIK Anak</label>
-                        <p className="text-lg text-gray-900">{child.nikAnak}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">NIK Anak</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.nikAnak}</p>
                       </div>
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Tanggal Lahir</label>
-                        <p className="text-lg text-gray-900">{child.tanggalLahir}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Tanggal Lahir</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.tanggalLahir}</p>
                       </div>
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Tanggal Lahir</label>
-                        <p className="text-lg text-gray-900">{child.tanggalLahir}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Tanggal Lahir</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.tanggalLahir}</p>
                       </div>
                       <div className="col-span-2">
-                        <label className="text-base text-gray-500 font-medium block mb-2">Tempat Lahir</label>
-                        <p className="text-lg text-gray-900">{child.tempatLahir}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Tempat Lahir</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.tempatLahir}</p>
                       </div>
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Usia Ibu</label>
-                        <p className="text-lg text-gray-900">{child.age}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Usia Ibu</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.age}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Data Tambahan saat Lahir */}
-                  <div className="pt-8 border-t border-gray-200">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-5">Data Tambahan saat Lahir</h4>
-                    <div className="grid grid-cols-2 gap-8">
+                  <div className="pt-6 sm:pt-8 border-t border-gray-200">
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-5">Data Tambahan saat Lahir</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Berat Badan Lahir</label>
-                        <p className="text-lg text-gray-900">{child.beratBadanLahir}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Berat Badan Lahir</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.beratBadanLahir}</p>
                       </div>
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Tinggi Badan Lahir</label>
-                        <p className="text-lg text-gray-900">{child.tinggiBadanLahir}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Tinggi Badan Lahir</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.tinggiBadanLahir}</p>
                       </div>
                       <div className="col-span-2">
-                        <label className="text-base text-gray-500 font-medium block mb-2">Lingkar Kepala Lahir</label>
-                        <p className="text-lg text-gray-900">{child.lingkarKepalaLahir}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Lingkar Kepala Lahir</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.lingkarKepalaLahir}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Identitas Ayah */}
-                  <div className="pt-8 border-t border-gray-200">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-5">Identitas Ayah</h4>
-                    <div className="grid grid-cols-2 gap-8">
+                  <div className="pt-6 sm:pt-8 border-t border-gray-200">
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-5">Identitas Ayah</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Nama Ayah</label>
-                        <p className="text-lg text-gray-900">{child.namaAyah}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Nama Ayah</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.namaAyah}</p>
                       </div>
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">NIK Ayah</label>
-                        <p className="text-lg text-gray-900">{child.nikAyah}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">NIK Ayah</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.nikAyah}</p>
                       </div>
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Tempat Lahir</label>
-                        <p className="text-lg text-gray-900">{child.tempatLahirAyah}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Tempat Lahir</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.tempatLahirAyah}</p>
                       </div>
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Tanggal Lahir</label>
-                        <p className="text-lg text-gray-900">{child.tanggalLahirAyah}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Tanggal Lahir</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.tanggalLahirAyah}</p>
                       </div>
                       <div className="col-span-2">
-                        <label className="text-base text-gray-500 font-medium block mb-2">Nomor Telepon Ayah</label>
-                        <p className="text-lg text-gray-900">{child.nomorTeleponAyah}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Nomor Telepon Ayah</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.nomorTeleponAyah}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Identitas Ibu */}
-                  <div className="pt-8 border-t border-gray-200">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-5">Identitas Ibu</h4>
-                    <div className="grid grid-cols-2 gap-8">
+                  <div className="pt-6 sm:pt-8 border-t border-gray-200">
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-5">Identitas Ibu</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Nama Ibu</label>
-                        <p className="text-lg text-gray-900">{child.namaIbu}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Nama Ibu</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.namaIbu}</p>
                       </div>
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">NIK Ibu</label>
-                        <p className="text-lg text-gray-900">{child.nikIbu}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">NIK Ibu</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.nikIbu}</p>
                       </div>
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Tempat Lahir</label>
-                        <p className="text-lg text-gray-900">{child.tempatLahirIbu}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Tempat Lahir</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.tempatLahirIbu}</p>
                       </div>
                       <div>
-                        <label className="text-base text-gray-500 font-medium block mb-2">Tanggal Lahir</label>
-                        <p className="text-lg text-gray-900">{child.tanggalLahirIbu}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Tanggal Lahir</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.tanggalLahirIbu}</p>
                       </div>
                       <div className="col-span-2">
-                        <label className="text-base text-gray-500 font-medium block mb-2">Nomor Telepon Ibu</label>
-                        <p className="text-lg text-gray-900">{child.nomorTeleponIbu}</p>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Nomor Telepon Ibu</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.nomorTeleponIbu}</p>
                       </div>
                     </div>
                   </div>
                 </div>
+                {isEditing && (
+                  <div className="mt-6 flex items-center justify-end gap-3">
+                    <button onClick={() => setIsEditing(false)} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Batal</button>
+                    <button onClick={() => setIsEditing(false)} className="px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269]">Simpan</button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -446,113 +496,139 @@ export default function ProfileAnakPage() {
               {/* History List */}
               <div className="px-6 py-6">
                 {scanHistory.length > 0 ? (
-                  <div className="space-y-6">
-                    {scanHistory.map((record) => (
-                      <div key={record.id} className="flex items-center gap-4 py-4 border-b border-gray-100 last:border-b-0">
+                  <div className="space-y-2 sm:space-y-3">
+                    {scanHistory.map((row) => (
+                      <div key={row.id} className="py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border-b border-gray-100 last:border-b-0">
+                        {/* Mobile Layout */}
+                        <div className="flex items-center gap-3 sm:hidden">
+                          {/* avatar */}
+                          <div className="w-10 h-10 rounded-full bg-[#E5F3F5] flex items-center justify-center text-[#397789] shrink-0">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+                            </svg>
+                          </div>
+                          {/* name & meta */}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-gray-900 text-sm mb-1">{child.name}</div>
+                            <div className="text-xs text-gray-500 flex items-center gap-2">
+                              <span className="flex items-center gap-1">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
+                                  <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
+                                </svg>
+                                {row.age} Tahun
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <FiClock size={12} />
+                                {row.timeAgo}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Desktop Layout */}
+                        <div className="hidden sm:flex sm:items-center gap-4 flex-1">
                         {/* avatar */}
-                        <div className="w-14 h-14 rounded-full bg-[#E5F3F5] flex items-center justify-center text-[#397789] shrink-0">
+                          <div className="w-12 h-12 rounded-full bg-[#E5F3F5] flex items-center justify-center text-[#397789] shrink-0">
                           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
                           </svg>
                         </div>
-
                         {/* name & meta */}
-                        <div className="flex-1 min-w-0 max-w-[200px]">
-                          <div className="font-semibold text-gray-900 text-base mb-1 truncate">{child.name}</div>
-                          <div className="text-sm text-gray-500 flex flex-col gap-1">
-                            <span className="flex items-center gap-1.5">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-gray-900 text-base mb-1">{child.name}</div>
+                            <div className="text-sm text-gray-500 flex items-center gap-3">
+                              <span className="flex items-center gap-1">
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
                                 <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
                               </svg>
-                              {record.age} Tahun
+                                {row.age} Tahun
                             </span>
-                            <span className="inline-flex items-center gap-1.5">
+                              <span className="inline-flex items-center gap-1">
                               <FiClock size={14} />
-                              {record.timeAgo}
+                                {row.timeAgo}
                             </span>
+                            </div>
                           </div>
                         </div>
 
+                        {/* Mobile: Measurement pills and status */}
+                        <div className="sm:hidden flex flex-wrap items-center justify-center gap-2">
                         {/* height pill */}
-                        <div className="shrink-0">
                           <div 
-                            className="flex items-center justify-center gap-2"
-                            style={{
-                              width: '130px',
-                              height: '56px',
-                              borderRadius: '14px',
-                              border: '1px solid rgba(57, 119, 137, 1)',
-                              backgroundColor: 'rgba(239, 255, 254, 1)'
-                            }}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-[#397789] bg-[#EFFFFE]"
+                            style={{ minWidth: '80px' }}
                           >
-                            <Image 
-                              src="/image/icon/tinggi-badan.svg" 
-                              alt="tinggi" 
-                              width={28} 
-                              height={36}
-                              style={{ width: '28px', height: '36px' }}
-                            />
-                            <span className="text-base font-semibold text-[#397789]">{record.height} cm</span>
+                            <Image src="/image/icon/tinggi-badan.svg" alt="tinggi" width={16} height={20} />
+                            <span className="text-xs font-semibold text-[#397789]">{row.height} cm</span>
+                          </div>
+                          {/* weight pill */}
+                          <div 
+                            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-[#397789] bg-[#EFFFFE]"
+                            style={{ minWidth: '80px' }}
+                          >
+                            <Image src="/image/icon/berat-badan.svg" alt="berat" width={12} height={20} />
+                            <span className="text-xs font-semibold text-[#397789]">{row.weight} Kg</span>
+                          </div>
+                          {/* status */}
+                          <div className="flex items-center gap-2">
+                            {row.status === 'normal' && (
+                              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-[#E8F5E9] text-[#4CAF50]">Sehat</span>
+                            )}
+                            {row.status === 'beresiko' && (
+                              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-[#FFF9E6] text-[#FFA726]">Beresiko</span>
+                            )}
+                            {row.status === 'stunting' && (
+                              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-[#FFEBEE] text-[#EF5350]">Stunting</span>
+                            )}
+                            {/* action button */}
+                            <button onClick={() => handleViewScanDetail(row.id)} className="w-8 h-8 rounded-full border-2 border-[#397789] flex items-center justify-center text-[#397789] hover:bg-[#397789] hover:text-white transition-colors cursor-pointer">
+                              <FiArrowRightCircle size={16} />
+                            </button>
                           </div>
                         </div>
 
+                        {/* Desktop: Measurement pills and status */}
+                        <div className="hidden sm:flex sm:items-center gap-4">
+                          {/* height pill */}
+                          <div 
+                            className="flex items-center justify-center gap-2.5"
+                            style={{ width: '140px', height: '56px', borderRadius: '16px', border: '1px solid rgba(57, 119, 137, 1)', backgroundColor: 'rgba(239, 255, 254, 1)' }}
+                          >
+                            <Image src="/image/icon/tinggi-badan.svg" alt="tinggi" width={31} height={38} style={{ width: '31px', height: '38px' }} />
+                            <span className="text-base font-semibold text-[#397789]">{row.height} cm</span>
+                          </div>
                         {/* weight pill */}
-                        <div className="shrink-0">
                           <div 
-                            className="flex items-center justify-center gap-2"
-                            style={{
-                              width: '115px',
-                              height: '56px',
-                              borderRadius: '14px',
-                              border: '1px solid rgba(57, 119, 137, 1)',
-                              backgroundColor: 'rgba(239, 255, 254, 1)'
-                            }}
+                            className="flex items-center justify-center gap-2.5"
+                            style={{ width: '140px', height: '56px', borderRadius: '16px', border: '1px solid rgba(57, 119, 137, 1)', backgroundColor: 'rgba(239, 255, 254, 1)' }}
                           >
-                            <Image 
-                              src="/image/icon/berat-badan.svg" 
-                              alt="berat" 
-                              width={18} 
-                              height={36}
-                              style={{ width: '18px', height: '36px' }}
-                            />
-                            <span className="text-base font-semibold text-[#397789]">{record.weight} Kg</span>
-                          </div>
+                            <Image src="/image/icon/berat-badan.svg" alt="berat" width={20} height={38} style={{ width: '20px', height: '38px' }} />
+                            <span className="text-base font-semibold text-[#397789]">{row.weight} Kg</span>
                         </div>
-
                         {/* status */}
-                        <div className="shrink-0">
-                          {record.status === 'normal' && (
-                            <span className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold bg-[#E8F5E9] text-[#4CAF50] whitespace-nowrap">
-                              Sehat
-                            </span>
-                          )}
-                          {record.status === 'beresiko' && (
-                            <span className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold bg-[#FFF9E6] text-[#FFA726] whitespace-nowrap">
-                              Beresiko
-                            </span>
-                          )}
-                          {record.status === 'stunting' && (
-                            <span className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold bg-[#FFEBEE] text-[#EF5350] whitespace-nowrap">
-                              Stunting
-                            </span>
+                          <div className="shrink-0" style={{ width: '100px' }}>
+                            {row.status === 'normal' && (
+                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#E8F5E9] text-[#4CAF50]">Sehat</span>
+                            )}
+                            {row.status === 'beresiko' && (
+                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFF9E6] text-[#FFA726]">Beresiko</span>
+                            )}
+                            {row.status === 'stunting' && (
+                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFEBEE] text-[#EF5350]">Stunting</span>
                           )}
                         </div>
-
-                        {/* action button - arrow circle right */}
-                        <button 
-                          onClick={() => handleViewScanDetail(record.id)}
-                          className="shrink-0 w-11 h-11 rounded-full border-2 border-[#397789] flex items-center justify-center text-[#397789] hover:bg-[#397789] hover:text-white transition-colors cursor-pointer"
-                        >
+                          {/* action button */}
+                          <button onClick={() => handleViewScanDetail(row.id)} className="shrink-0 w-10 h-10 rounded-full border-2 border-[#397789] flex items-center justify-center text-[#397789] hover:bg-[#397789] hover:text-white transition-colors cursor-pointer">
                           <FiArrowRightCircle size={20} />
                         </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="py-10 text-center text-gray-500 text-sm">
-                    Belum ada riwayat pemindaian
-                  </div>
+                  <div className="py-10 text-center text-gray-500 text-sm">Belum ada riwayat pemindaian</div>
                 )}
               </div>
             </div>

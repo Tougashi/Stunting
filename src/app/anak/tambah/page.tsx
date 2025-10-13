@@ -110,22 +110,23 @@ export default function TambahAnakPage() {
               style={{ boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D' }}
             >
               <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                <button 
-                  onClick={() => router.push('/orang-tua/tambah')}
-                  className="px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] font-medium w-fit"
-                >
-                  Tambah Orang Tua
-                </button>
-                
-                {/* Filter Dropdown */}
-                <div className="relative" ref={filterRef}>
+                <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-center mx-auto">
                   <button 
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors whitespace-nowrap"
+                    onClick={() => router.push('/orang-tua/tambah')}
+                    className="w-full sm:w-fit px-3 sm:px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] font-medium"
                   >
-                    <FiFilter className="text-gray-500" />
-                    <span className="text-gray-700">Filter by</span>
+                    Tambah Orang Tua
                   </button>
+                  
+                  {/* Filter Dropdown */}
+                  <div className="relative w-full sm:w-auto" ref={filterRef}>
+                    <button 
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="inline-flex items-center justify-center gap-2 w-full sm:w-fit px-3 sm:px-4 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                    >
+                      <FiFilter className="text-gray-500" />
+                      <span className="text-gray-700">Filter by</span>
+                    </button>
 
                   {/* Filter Dropdown Content */}
                   {showFilters && (
@@ -160,6 +161,9 @@ export default function TambahAnakPage() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* close group container */}
                 </div>
 
                 <div className="relative flex-1 min-w-[240px]">

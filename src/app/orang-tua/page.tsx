@@ -238,7 +238,7 @@ function ParentCard({ parent }: { parent: ParentProfile }) {
         {open && (
           <div className="absolute right-0 top-full mt-2 w-36 sm:w-40 bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden z-20">
             <button onClick={() => router.push(`/orang-tua/${parent.id}`)} className="w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-gray-50">Lihat Detail</button>
-            <button onClick={() => console.log('Edit', parent.id)} className="w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-gray-50">Edit</button>
+            <button onClick={() => router.push(`/orang-tua/${parent.id}?edit=1`)} className="w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-gray-50">Edit</button>
             <button onClick={() => setConfirmOpen(true)} className="w-full text-left px-3 py-2 text-xs sm:text-sm text-red-600 hover:bg-red-50">Hapus</button>
           </div>
         )}

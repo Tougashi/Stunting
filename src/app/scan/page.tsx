@@ -177,21 +177,21 @@ export default function ScanPage() {
               }}
             >
               {/* Action Bar */}
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-                {/* Left side - Tambah Anak and Filter */}
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div className="p-0 flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+                {/* Left side - Tambah Anak and Filter (centered like orang tua) */}
+                <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-center mx-auto">
                   <button
                     onClick={() => router.push('/anak/tambah')}
-                    className="bg-[#407A81] text-white px-6 py-2 rounded-md hover:bg-[#326269] transition-colors font-medium whitespace-nowrap"
+                    className="w-full sm:w-fit px-3 sm:px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] font-medium"
                   >
                     Tambah Anak
                   </button>
                   
                   {/* Filter Button */}
-                  <div className="relative" ref={filterRef}>
+                  <div className="relative w-full sm:w-auto" ref={filterRef}>
                     <button
                       onClick={() => setShowFilters(!showFilters)}
-                      className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2 w-full sm:w-fit px-3 sm:px-4 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50"
                     >
                       <FiFilter className="text-gray-500" />
                       <span className="text-gray-700">Filter by</span>
@@ -234,7 +234,7 @@ export default function ScanPage() {
                 </div>
                 
                 {/* Right side - Search Input */}
-                <div className="relative w-full sm:w-auto sm:min-w-[300px]">
+                <div className="relative flex-1 min-w-[200px] sm:min-w-[240px] mt-2 sm:mt-0">
                   <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"

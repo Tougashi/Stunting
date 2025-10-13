@@ -78,6 +78,8 @@ export default function ScanPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [selectedChild, setSelectedChild] = useState<Bayi | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -94,10 +96,9 @@ export default function ScanPage() {
     };
   }, []);
 
-  // Handle child card click
+  // Handle child card click -> go to child detail page
   const handleChildClick = (child: Bayi) => {
-    setSelectedChild(child);
-    setShowCameraModal(true);
+    router.push(`/anak/${child.id}`);
   };
 
   // Handle camera selection
@@ -176,18 +177,18 @@ export default function ScanPage() {
               }}
             >
               {/* Action Bar */}
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-                {/* Left side - Tambah Anak and Filter */}
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                  <button onClick={() => router.push('/anak/tambah')} className="bg-[#407A81] text-white px-6 py-2 rounded-md hover:bg-[#326269] transition-colors font-medium whitespace-nowrap">
+              <div className="p-0 flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+                {/* Left side - Tambah Anak and Filter (centered like orang tua) */}
+                <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-center mx-auto">
+                  <button onClick={() => router.push('/anak/tambah')} className="w-full sm:w-fit px-3 sm:px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] font-medium">
                     Tambah Anak
                   </button>
                   
                   {/* Filter Button */}
-                  <div className="relative" ref={filterRef}>
+                  <div className="relative w-full sm:w-auto" ref={filterRef}>
                     <button
                       onClick={() => setShowFilters(!showFilters)}
-                      className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2 w-full sm:w-fit px-3 sm:px-4 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50"
                     >
                       <FiFilter className="text-gray-500" />
                       <span className="text-gray-700">Filter by</span>
@@ -230,14 +231,14 @@ export default function ScanPage() {
                 </div>
                 
                 {/* Right side - Search Input */}
-                <div className="relative w-full sm:w-auto sm:min-w-[300px]">
+                <div className="relative flex-1 min-w-[200px] sm:min-w-[240px] mt-2 sm:mt-0">
                   <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Cari Anak"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none w-full"
+                    className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
                   />
                 </div>
               </div>
@@ -245,7 +246,7 @@ export default function ScanPage() {
               {/* Grid Card Layout */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredAndSortedChildren.map((child) => (
-                  <ChildCard key={child.id} child={child} onClick={handleChildClick} />
+                  <ChildCard key={child.id} child={child} onClick={handleChildClick} onOpenMenu={(id) => setMenuOpenId(menuOpenId === id ? null : id)} menuOpenId={menuOpenId} onEdit={(id) => { setMenuOpenId(null); router.push(`/anak/edit/${id}`); }} onDelete={(id) => { setMenuOpenId(null); setDeleteId(id); }} />
                 ))}
               </div>
 
@@ -298,6 +299,30 @@ export default function ScanPage() {
             </div>
           </div>
         )}
+        {/* Delete Confirmation Modal */}
+        {deleteId && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto">
+              <h2 className="text-xl font-semibold text-center text-gray-900 mb-4">
+                Hapus data anak ini?
+              </h2>
+              <div className="space-y-3">
+                <button
+                  onClick={() => { console.log('hapus anak', deleteId); setDeleteId(null); }}
+                  className="w-full bg-[#407A81] text-white py-3 px-6 rounded-lg hover:bg-[#326269] transition-colors font-medium"
+                >
+                  Hapus
+                </button>
+                <button
+                  onClick={() => setDeleteId(null)}
+                  className="w-full border border-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Batalkan
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
@@ -307,9 +332,13 @@ export default function ScanPage() {
 interface ChildCardProps {
   child: Bayi;
   onClick: (child: Bayi) => void;
+  onOpenMenu: (id: string) => void;
+  menuOpenId: string | null;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
-function ChildCard({ child, onClick }: ChildCardProps) {
+function ChildCard({ child, onClick, onOpenMenu, menuOpenId, onEdit, onDelete }: ChildCardProps) {
   return (
     <div 
       onClick={() => onClick(child)}
@@ -339,9 +368,20 @@ function ChildCard({ child, onClick }: ChildCardProps) {
         </div>
         
         {/* More Options */}
-        <button className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100">
-          <FiMoreVertical size={16} />
-        </button>
+        <div className="relative">
+          <button
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+            onClick={(e) => { e.stopPropagation(); onOpenMenu(child.id); }}
+          >
+            <FiMoreVertical size={16} />
+          </button>
+          {menuOpenId === child.id && (
+            <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10 overflow-hidden">
+              <button onClick={(e) => { e.stopPropagation(); onEdit(child.id); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Edit</button>
+              <button onClick={(e) => { e.stopPropagation(); onDelete(child.id); }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50">Hapus</button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,12 +1,16 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Layout } from '@/components';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FiMoreVertical } from 'react-icons/fi';
+import { FiMoreVertical, FiArrowLeft } from 'react-icons/fi';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 export default function OrangTuaDetailPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const parent = {
     father: {
       name: 'Mustafa',
@@ -46,12 +50,20 @@ export default function OrangTuaDetailPage() {
   const initialData = useMemo(() => parent, []);
   const [data, setData] = useState(initialData);
   const [isEditing, setIsEditing] = useState(false);
+  useEffect(() => {
+    const edit = searchParams?.get('edit');
+    if (edit === '1' || edit === 'true') {
+      setIsEditing(true);
+    }
+  }, [searchParams]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAddChild, setShowAddChild] = useState(false);
   const [childForm, setChildForm] = useState({
     name: '', nik: '', tempat: '', tgl: '', age: '', unit: 'bulan', order: '', gender: 'L', berat: '', tinggi: '', lingkar: '', photo: '' as string | null,
   });
   const [showDelete, setShowDelete] = useState(false);
+  const [childMenuOpenId, setChildMenuOpenId] = useState<string | null>(null);
+  const [childDeleteId, setChildDeleteId] = useState<string | null>(null);
 
   const update = (path: string, value: string | number) => {
     setData((prev) => {
@@ -89,8 +101,8 @@ export default function OrangTuaDetailPage() {
 
         <div className="relative z-20 py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto">
-            <Link href="/orang-tua" className="mb-4 inline-flex items-center gap-2 text-lg  md:text-2xl text-[#397789] hover:underline">
-              <span>&lt;</span>
+            <Link href="/orang-tua" className="mb-4 inline-flex items-center gap-2 text-lg  md:text-2xl text-gray-700 hover:underline">
+            <FiArrowLeft size={20} />
               <span>Orang Tua</span>
             </Link>
             <div className="text-center text-2xl sm:text-3xl md:text-5xl font-semibold text-gray-700 mb-4">Profile Orang Tua</div>
@@ -144,7 +156,7 @@ export default function OrangTuaDetailPage() {
                 {/* Family */}
                 <div className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                <SectionTitle title="Identitas Keluarga" />
+                    <div className="text-base sm:text-lg font-semibold text-gray-700 mb-2">Identitas Keluarga</div>
                     {isEditing ? (
                   <InputField label="NIK Keluarga" value={data.family.kk} onChange={(v) => update('family.kk', v)} />
                     ) : (
@@ -223,8 +235,34 @@ export default function OrangTuaDetailPage() {
               </div>
               <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-3 gap-6">
                 {parent.children.map((c) => (
-                  <div key={c.id} className="relative rounded-md border border-gray-200 bg-white px-3 py-3" style={{ boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D' }}>
-                    <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"><FiMoreVertical /></button>
+                  <div
+                    key={c.id}
+                    className="relative rounded-md border border-gray-200 bg-white px-3 py-3 cursor-pointer hover:border-[#407A81]"
+                    style={{ boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D' }}
+                    onClick={() => router.push(`/anak/${c.id}`)}
+                  >
+                    <button
+                      className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                      onClick={(e) => { e.stopPropagation(); setChildMenuOpenId(childMenuOpenId === c.id ? null : c.id); }}
+                    >
+                      <FiMoreVertical />
+                    </button>
+                    {childMenuOpenId === c.id && (
+                      <div className="absolute right-2 top-8 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-20 overflow-hidden">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setChildMenuOpenId(null); router.push(`/anak/edit/${c.id}`); }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setChildMenuOpenId(null); setChildDeleteId(c.id); }}
+                          className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    )}
                     <div className="flex items-center gap-3">
                       <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -241,6 +279,19 @@ export default function OrangTuaDetailPage() {
                 ))}
               </div>
             </div>
+            {/* Child delete confirm */}
+            {childDeleteId && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setChildDeleteId(null)} />
+                <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                  <div className="text-center text-lg font-semibold text-gray-900 mb-4">Hapus anak ini?</div>
+                  <div className="space-y-3">
+                    <button onClick={() => { console.log('hapus anak', childDeleteId); setChildDeleteId(null); }} className="w-full px-4 py-2 rounded-full bg-[#407A81] text-white hover:bg-[#326269]">Hapus</button>
+                    <button onClick={() => setChildDeleteId(null)} className="w-full px-4 py-2 rounded-full border-2 border-[#407A81] text-[#407A81] hover:bg-[#E7F5F7]">Batalkan</button>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Add Child Modal */}
               {showAddChild && (
               <div className="fixed inset-0 z-50 overflow-y-auto px-4 py-20">
