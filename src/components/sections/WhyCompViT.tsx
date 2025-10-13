@@ -13,7 +13,7 @@ interface WhyCardProps {
 const WhyCard: React.FC<WhyCardProps> = ({ title, description }) => {
   return (
     <motion.div 
-      className="bg-white p-6 text-center h-40 flex flex-col justify-center shadow-[0px_1px_3px_1px_#00000026,0px_1px_2px_0px_#0000004D] opacity-100 rounded-tl-[100px] rounded-tr-[100px] rounded-br-[10px] rounded-bl-[10px]"
+      className="bg-white p-3 sm:p-4 lg:p-6 text-center h-32 sm:h-36 lg:h-40 flex flex-col justify-center shadow-[0px_1px_3px_1px_#00000026,0px_1px_2px_0px_#0000004D] opacity-100 rounded-tl-[50px] sm:rounded-tl-[100px] rounded-tr-[50px] sm:rounded-tr-[100px] rounded-br-[5px] sm:rounded-br-[10px] rounded-bl-[5px] sm:rounded-bl-[10px]"
       initial={{ opacity: 0, y: 50 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
@@ -21,7 +21,7 @@ const WhyCard: React.FC<WhyCardProps> = ({ title, description }) => {
       whileHover={{ scale: 1.05, y: -5 }}
     >
       <motion.h3 
-        className="text-sm font-bold text-gray-800 mb-2 leading-tight"
+        className="text-sm sm:text-base font-bold text-gray-800 mb-1 sm:mb-2 leading-tight text-center"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
@@ -30,7 +30,7 @@ const WhyCard: React.FC<WhyCardProps> = ({ title, description }) => {
         {title}
       </motion.h3>
       <motion.p 
-        className="text-xs text-gray-600 leading-relaxed"
+        className="text-sm text-gray-600 leading-relaxed text-center"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
@@ -52,7 +52,7 @@ interface CTACardProps {
 
 const CTACard: React.FC<CTACardProps> = ({ image, title, subtitle, buttonText, onButtonClick }) => {
   return (
-    <div className="relative overflow-hidden text-center h-96 shadow-[0px_1px_3px_1px_#00000026,0px_1px_2px_0px_#0000004D] opacity-100 rounded-tl-[100px] rounded-tr-[100px] rounded-br-[20px] rounded-bl-[20px]">
+    <div className="relative overflow-hidden text-center h-64 sm:h-80 lg:h-96 shadow-[0px_1px_3px_1px_#00000026,0px_1px_2px_0px_#0000004D] opacity-100 rounded-tl-[50px] sm:rounded-tl-[100px] rounded-tr-[50px] sm:rounded-tr-[100px] rounded-br-[10px] sm:rounded-br-[20px] rounded-bl-[10px] sm:rounded-bl-[20px]">
       {/* Background Image */}
       <Image 
         src={image}
@@ -62,18 +62,18 @@ const CTACard: React.FC<CTACardProps> = ({ image, title, subtitle, buttonText, o
       />
       
       {/* Overlay Content */}
-      <div className="absolute inset-0 bg-black/30 flex flex-col justify-end p-8">
-        <h3 className="text-xl font-bold text-white mb-2 leading-tight">
+      <div className="absolute inset-0 bg-black/30 flex flex-col justify-end p-4 sm:p-6 lg:p-8">
+        <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1 sm:mb-2 leading-tight text-center">
           {title}
         </h3>
-        <h4 className="text-lg font-bold text-white mb-6">
+        <h4 className="text-base sm:text-lg lg:text-xl font-bold text-white mb-4 sm:mb-6 text-center">
           {subtitle}
         </h4>
         <Button
           variant="primary"
           size="lg"
           onClick={onButtonClick}
-          className="!bg-white !text-black hover:!bg-gray-100 focus:ring-white shadow-md px-8 py-3 text-sm font-semibold tracking-wide rounded-full"
+          className="!bg-white !text-black hover:!bg-gray-100 focus:ring-white shadow-md px-4 sm:px-6 lg:px-8 py-2 sm:py-3 text-sm sm:text-base font-semibold tracking-wide rounded-full"
         >
           {buttonText}
         </Button>
@@ -109,7 +109,7 @@ const WhyCompViT: React.FC<WhyCompViTProps> = ({ className = '', onStartDetectio
 
   return (
     <motion.section 
-      className={`wave-background-bottom min-h-screen py-20 px-6 lg:px-12 relative ${className}`}
+      className={`wave-background-bottom min-h-screen py-8 sm:py-12 lg:py-20 px-6 lg:px-12 relative ${className}`}
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
@@ -122,17 +122,17 @@ const WhyCompViT: React.FC<WhyCompViTProps> = ({ className = '', onStartDetectio
         </svg>
       </div>
       
-      <div className="max-w-7xl mx-auto relative z-10 pt-32">
+      <div className="max-w-7xl mx-auto relative z-10 pt-16 sm:pt-24 lg:pt-32">
         {/* Header */}
         <motion.div 
-          className="text-center mb-12"
+          className="text-center mb-8 sm:mb-10 lg:mb-12"
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
           <motion.h2 
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-8 leading-tight"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-6 sm:mb-8 leading-tight text-center"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -144,7 +144,7 @@ const WhyCompViT: React.FC<WhyCompViTProps> = ({ className = '', onStartDetectio
 
         {/* Why Features Grid */}
         <motion.div 
-          className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 lg:mb-12"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.3 }}
@@ -168,7 +168,7 @@ const WhyCompViT: React.FC<WhyCompViTProps> = ({ className = '', onStartDetectio
 
         {/* CTA Section */}
         <motion.div 
-          className="flex flex-col items-center space-y-8"
+          className="flex flex-col items-center space-y-4 sm:space-y-6 lg:space-y-8"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.5 }}
@@ -176,16 +176,16 @@ const WhyCompViT: React.FC<WhyCompViTProps> = ({ className = '', onStartDetectio
         >
           {/* Image Card */}
           <motion.div 
-            className="w-full max-w-sm"
+            className="w-full max-w-xs sm:max-w-sm"
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.6 }}
             viewport={{ once: true }}
             whileHover={{ scale: 1.05 }}
           >
-            <div className="relative overflow-hidden h-64 opacity-100 rounded-tl-[100px] rounded-tr-[100px] rounded-br-[20px] rounded-bl-[20px]">
+            <div className="relative overflow-hidden h-48 sm:h-56 lg:h-64 opacity-100 rounded-tl-[50px] sm:rounded-tl-[100px] rounded-tr-[50px] sm:rounded-tr-[100px] rounded-br-[10px] sm:rounded-br-[20px] rounded-bl-[10px] sm:rounded-bl-[20px]">
               <Image 
-                src="/image/icon/pengukuran-anak.png"
+                src="/image/icon/pengukuran-anak.jpg"
                 alt="Pengukuran Anak" 
                 fill
               />
@@ -201,7 +201,7 @@ const WhyCompViT: React.FC<WhyCompViTProps> = ({ className = '', onStartDetectio
             viewport={{ once: true }}
           >
             <motion.h3 
-              className="text-2xl font-bold text-white mb-2 leading-tight"
+              className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1 sm:mb-2 leading-tight text-center"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.8 }}
@@ -210,7 +210,7 @@ const WhyCompViT: React.FC<WhyCompViTProps> = ({ className = '', onStartDetectio
               Mulai Deteksi Dini, Wujudkan
             </motion.h3>
             <motion.h4 
-              className="text-xl font-bold text-white"
+              className="text-lg sm:text-xl lg:text-2xl font-bold text-white text-center"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.9 }}
@@ -233,7 +233,7 @@ const WhyCompViT: React.FC<WhyCompViTProps> = ({ className = '', onStartDetectio
               variant="primary"
               size="lg"
               onClick={onStartDetection}
-              className="!bg-white !text-black hover:!bg-gray-100 focus:ring-white shadow-md px-8 py-3 text-sm font-semibold tracking-wide rounded-full"
+              className="!bg-white !text-black hover:!bg-gray-100 focus:ring-white shadow-md px-6 sm:px-8 py-2 sm:py-3 text-sm sm:text-base font-semibold tracking-wide rounded-full"
             >
               Mulai Deteksi Sekarang
             </Button>

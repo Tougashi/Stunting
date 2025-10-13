@@ -28,6 +28,17 @@ body {
   background: linear-gradient(237.97deg, #FFFFFF 5%, #9ECAD6 80%);
 }
 
+/* Responsive Hero background */
+.hero-responsive-bg {
+  background: var(--color-light-blue);
+}
+
+@media (min-width: 1024px) {
+  .hero-responsive-bg {
+    background: linear-gradient(237.97deg, #FFFFFF 5%, #9ECAD6 80%);
+  }
+}
+
 /* Wave background for bottom sections (WhyCompViT) */
 .wave-background-bottom {
   position: relative;

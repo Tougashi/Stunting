@@ -105,13 +105,13 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
       className="bg-white rounded-2xl overflow-visible relative border border-gray-200 table-shadow"
     >
       {/* Header dengan Search dan Filter */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="p-4 sm:p-6 border-b border-gray-200">
+        <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
           {/* Filter Dropdown - Sebelah Kiri */}
           <div className="relative flex-shrink-0" ref={filterRef}>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 transition-colors whitespace-nowrap cursor-pointer"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 transition-colors whitespace-nowrap cursor-pointer text-sm sm:text-base"
             >
               <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -122,10 +122,10 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
             {/* Filter Dropdown Content */}
             {showFilters && (
               <div 
-                className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] max-w-[calc(100vw-2rem)] overflow-hidden">
-                <div className="p-4">
+                className="absolute top-full left-0 mt-2 w-56 sm:w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] max-w-[calc(100vw-2rem)] overflow-hidden">
+                <div className="p-3 sm:p-4">
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Status Filter by:</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">Status Filter by:</label>
                     <div className="space-y-2">
                       {[
                         { value: 'az', label: 'A→Z' },
@@ -157,7 +157,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                               accentColor: '#407A81'
                             }}
                           />
-                          <span className="text-sm text-gray-700 whitespace-nowrap">{option.label}</span>
+                          <span className="text-xs sm:text-sm text-gray-700 whitespace-nowrap">{option.label}</span>
                         </label>
                       ))}
                     </div>
@@ -180,7 +180,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                               accentColor: '#407A81'
                             }}
                           />
-                          <span className="text-sm text-gray-700 whitespace-nowrap">{option.label}</span>
+                          <span className="text-xs sm:text-sm text-gray-700 whitespace-nowrap">{option.label}</span>
                         </label>
                       ))}
                     </div>
@@ -191,16 +191,16 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
           </div>
           
           {/* Search Bar - Sebelah Kanan */}
-          <div className="relative w-full sm:w-auto sm:min-w-[250px]">
+          <div className="relative w-full sm:w-auto sm:min-w-[200px] lg:min-w-[250px]">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
             <input
               type="text"
               placeholder="Cari Pasien/Anak"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-700 focus:border-transparent"
+              className="block w-full pl-9 sm:pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-700 focus:border-transparent text-sm sm:text-base"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -213,19 +213,19 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
         <table className="min-w-full divide-y divide-gray-200 rounded-b-2xl overflow-hidden">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                 Nama
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                 Umur
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                 Tanggal
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+              <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                 Aksi
               </th>
             </tr>
@@ -233,43 +233,43 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredAndSortedData.map((record, index) => (
               <tr key={record.id} className={`hover:bg-gray-50 ${index === filteredAndSortedData.length - 1 ? 'border-b border-gray-200' : ''}`}>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10">
-                      <div className="h-10 w-10 rounded-full bg-teal-700 flex items-center justify-center">
-                        <span className="text-sm font-medium text-white">
+                    <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-teal-700 flex items-center justify-center">
+                        <span className="text-xs sm:text-sm font-medium text-white">
                           {record.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
                     </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
+                    <div className="ml-3 sm:ml-4">
+                      <div className="text-xs sm:text-sm font-medium text-gray-900">
                         {record.name}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-xs sm:text-sm text-gray-500">
                         {record.gender === 'male' ? 'Laki-laki' : 'Perempuan'}
                       </div>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{record.age} tahun</div>
-                  <div className="text-sm text-gray-500">{record.height} cm | {record.weight} kg</div>
+                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                  <div className="text-xs sm:text-sm text-gray-900">{record.age} tahun</div>
+                  <div className="text-xs sm:text-sm text-gray-500">{record.height} cm | {record.weight} kg</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(record.status)}`}>
                     {getStatusLabel(record.status)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                   {new Date(record.date).toLocaleDateString('id-ID')}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium">
                   <button 
                     onClick={() => onEdit?.(record)}
                     className="text-teal-700 hover:text-teal-800 mr-3 cursor-pointer"
                   >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
@@ -281,12 +281,12 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
         </table>
 
         {filteredAndSortedData.length === 0 && (
-          <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-center py-8 sm:py-12">
+            <svg className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Tidak ada data</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <h3 className="mt-2 text-xs sm:text-sm font-medium text-gray-900">Tidak ada data</h3>
+            <p className="mt-1 text-xs sm:text-sm text-gray-500">
               {searchTerm || filters.status.length > 0 
                 ? 'Tidak ada hasil yang sesuai dengan pencarian atau filter.'
                 : 'Belum ada riwayat pemindaian.'

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ProfileButton from '../ui/ProfileButton';
@@ -30,6 +30,7 @@ const Navbar: React.FC<NavbarProps> = ({
   className = '',
 }) => {
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isActiveLink = (href: string) => {
     if (!pathname) return false;
@@ -37,6 +38,14 @@ const Navbar: React.FC<NavbarProps> = ({
       return pathname === '/';
     }
     return pathname.startsWith(href);
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -71,8 +80,8 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Profile Button */}
-          <div className="flex-shrink-0">
+          {/* Profile Button - Hidden on mobile */}
+          <div className="hidden sm:flex flex-shrink-0">
             <ProfileButton />
           </div>
 
@@ -80,15 +89,49 @@ const Navbar: React.FC<NavbarProps> = ({
           <div className="sm:hidden">
             <button
               type="button"
+              onClick={toggleMobileMenu}
               className="text-gray-600 hover:text-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] p-2 cursor-pointer"
-              aria-label="Open menu"
+              aria-label="Toggle menu"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                {isMobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
               </svg>
             </button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {isMobileMenuOpen && (
+          <div className="sm:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 bg-[#EFFFFE] border-t border-gray-200">
+              {navItems.map((item, index) => (
+                <Link
+                  key={index}
+                  href={item.href}
+                  onClick={closeMobileMenu}
+                  className={`block px-3 py-2 text-base font-medium transition-colors duration-200 ${
+                    isActiveLink(item.href)
+                      ? 'text-[var(--color-primary)] bg-gray-100'
+                      : 'text-gray-600 hover:text-[var(--color-primary)] hover:bg-gray-100'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              
+              {/* Profile Button in Mobile Menu */}
+              <div className="pt-4 border-t border-gray-200">
+                <div className="px-3 py-2">
+                  <ProfileButton />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
