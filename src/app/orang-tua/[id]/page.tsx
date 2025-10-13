@@ -4,17 +4,12 @@ import React, { useMemo, useState } from 'react';
 import { Layout } from '@/components';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { FiMoreVertical, FiEdit2, FiTrash2 } from 'react-icons/fi';
-import { useParams } from 'next/navigation';
+import { FiMoreVertical } from 'react-icons/fi';
 
 export default function OrangTuaDetailPage() {
-  const params = useParams();
-  const parentId = (params?.id as string) || '';
-  
   const parent = {
     father: {
-      name: 'Bapak Mustafa',
+      name: 'Mustafa',
       nik: '002211102131223',
       phone: '0851 1234 1234',
       birthPlace: 'Garut',
@@ -48,7 +43,6 @@ export default function OrangTuaDetailPage() {
     ],
   };
 
-  const router = useRouter();
   const initialData = useMemo(() => parent, []);
   const [data, setData] = useState(initialData);
   const [isEditing, setIsEditing] = useState(false);
@@ -58,8 +52,6 @@ export default function OrangTuaDetailPage() {
     name: '', nik: '', tempat: '', tgl: '', age: '', unit: 'bulan', order: '', gender: 'L', berat: '', tinggi: '', lingkar: '', photo: '' as string | null,
   });
   const [showDelete, setShowDelete] = useState(false);
-  const [childMenuOpen, setChildMenuOpen] = useState<string | null>(null);
-  const [childToDelete, setChildToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const update = (path: string, value: string | number) => {
     setData((prev) => {
@@ -95,20 +87,20 @@ export default function OrangTuaDetailPage() {
           }}
         />
 
-        <div className="relative z-20 py-16 px-4 sm:px-6 lg:px-8">
+        <div className="relative z-20 py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto">
-            <Link href="/orang-tua" className="mb-4 inline-flex items-center gap-2 text-2xl text-[#397789] hover:underline">
+            <Link href="/orang-tua" className="mb-4 inline-flex items-center gap-2 text-lg  md:text-2xl text-[#397789] hover:underline">
               <span>&lt;</span>
               <span>Orang Tua</span>
             </Link>
-            <div className="text-center text-5xl font-semibold text-gray-700 mb-4">Profile Orang Tua</div>
+            <div className="text-center text-2xl sm:text-3xl md:text-5xl font-semibold text-gray-700 mb-4">Profile Orang Tua</div>
 
             {/* Detail Card */}
             <div 
               className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6"
               style={{ boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D' }}
             >
-              <div className="p-5 sm:p-6">
+              <div className="p-4 sm:p-6">
                 <div className="flex justify-end relative">
                   <button onClick={() => setMenuOpen(!menuOpen)} className="p-1 text-[#397789]"><FiMoreVertical /></button>
                   {menuOpen && (
@@ -134,7 +126,7 @@ export default function OrangTuaDetailPage() {
                 />
 
                 {/* Mother */}
-                <div className="mt-6">
+                <div className="mt-4 sm:mt-6">
                   <SectionTitle title="Identitas Ibu" />
                   <IdentityRow
                     editing={isEditing}
@@ -150,27 +142,33 @@ export default function OrangTuaDetailPage() {
                 </div>
 
                 {/* Family */}
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <SectionTitle title="Identitas Keluarga" />
+                <SectionTitle title="Identitas Keluarga" />
                     {isEditing ? (
-                      <InputField label="NIK Keluarga" value={data.family.kk} onChange={(v) => update('family.kk', v)} />
+                  <InputField label="NIK Keluarga" value={data.family.kk} onChange={(v) => update('family.kk', v)} />
                     ) : (
-                      <KeyValue label="NIK Keluarga" value={data.family.kk} />
+                  <div className="mb-2">
+                    <div className="text-sm sm:text-base text-gray-500">NIK Keluarga</div>
+                    <div className="text-lg sm:text-xl font-semibold text-gray-800">{data.family.kk}</div>
+                  </div>
                     )}
                   </div>
                   <div>
                     <div className="h-[22px]" />
                     {isEditing ? (
-                      <InputField label="Jumlah Anak" value={String(data.family.childrenCount)} onChange={(v) => update('family.childrenCount', Number(v))} />
+                  <InputField label="Jumlah Anak" value={String(data.family.childrenCount)} onChange={(v) => update('family.childrenCount', Number(v))} />
                     ) : (
-                      <KeyValue label="Jumlah Anak" value={`${data.family.childrenCount} Anak`} />
+                  <div className="mb-2">
+                    <div className="text-sm sm:text-base text-gray-500">Jumlah Anak</div>
+                    <div className="text-lg sm:text-xl font-semibold text-gray-800">{`${data.family.childrenCount} Anak`}</div>
+                  </div>
                     )}
                   </div>
                 </div>
 
                 {/* Address */}
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <SectionTitle title="Alamat Rumah" />
                     {isEditing ? (
@@ -221,52 +219,17 @@ export default function OrangTuaDetailPage() {
             >
               <div className="p-4 flex items-center justify-between">
                 <div className="font-semibold text-gray-700 text-lg">Anak</div>
-                <button onClick={() => router.push(`/anak/tambah/form?parentId=${parentId}`)} className="px-4 py-2 rounded-full bg-[#407A81] text-white text-sm hover:bg-[#326269] cursor-pointer">Tambah Anak</button>
+                <button onClick={() => setShowAddChild(true)} className="px-4 py-2 rounded-full bg-[#407A81] text-white text-sm hover:bg-[#326269]">Tambah Anak</button>
               </div>
               <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-3 gap-6">
                 {parent.children.map((c) => (
                   <div key={c.id} className="relative rounded-md border border-gray-200 bg-white px-3 py-3" style={{ boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D' }}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setChildMenuOpen(childMenuOpen === c.id ? null : c.id);
-                      }}
-                      className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 z-10"
-                    >
-                      <FiMoreVertical />
-                    </button>
-                    {childMenuOpen === c.id && (
-                      <>
-                        <div className="fixed inset-0 z-20" onClick={() => setChildMenuOpen(null)} />
-                        <div className="absolute top-8 right-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-30 min-w-[120px]">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setChildMenuOpen(null);
-                              router.push(`/anak/edit/${c.id}`);
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                          >
-                            <FiEdit2 className="text-[#407A81]" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setChildMenuOpen(null);
-                              setChildToDelete({ id: c.id, name: c.name });
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center gap-2"
-                          >
-                            <FiTrash2 />
-                            Hapus
-                          </button>
-                        </div>
-                      </>
-                    )}
-                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push(`/profile/${c.id}`)}>
-                      <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-gray-100">
-                        <Image src={c.avatar} alt={c.name} fill className="object-cover p-1" />
+                    <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"><FiMoreVertical /></button>
+                    <div className="flex items-center gap-3">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+                        </svg>
                       </div>
                       <div className="min-w-0">
                         <div className="font-semibold text-gray-900 text-lg leading-tight truncate">{c.name}</div>
@@ -347,7 +310,7 @@ export default function OrangTuaDetailPage() {
                 </div>
               </div>
             )}
-            {/* Delete Parent confirm modal */}
+            {/* Delete confirm modal */}
             {showDelete && (
               <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDelete(false)} />
@@ -360,34 +323,6 @@ export default function OrangTuaDetailPage() {
                 </div>
               </div>
             )}
-            {/* Delete Child confirm modal */}
-            {childToDelete && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setChildToDelete(null)} />
-                <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-                  <div className="text-center text-lg font-semibold text-gray-900 mb-4">
-                    Apakah anda yakin ingin menghapus {childToDelete.name}?
-                  </div>
-                  <div className="space-y-3">
-                    <button 
-                      onClick={() => { 
-                        setChildToDelete(null); 
-                        console.log('hapus anak:', childToDelete.id); 
-                      }} 
-                      className="w-full px-4 py-2 rounded-full bg-[#407A81] text-white hover:bg-[#326269]"
-                    >
-                      Hapus
-                    </button>
-                    <button 
-                      onClick={() => setChildToDelete(null)} 
-                      className="w-full px-4 py-2 rounded-full border-2 border-[#407A81] text-[#407A81] hover:bg-[#E7F5F7]"
-                    >
-                      Batalkan
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -396,14 +331,14 @@ export default function OrangTuaDetailPage() {
 }
 
 function SectionTitle({ title }: { title: string }) {
-  return <div className="text-xs font-semibold text-gray-600 mb-2">{title}</div>;
+  return <div className="text-sm sm:text-xs font-semibold text-gray-600 mb-2">{title}</div>;
 }
 
 function KeyValue({ label, value }: { label: string; value: string }) {
   return (
     <div className="mb-2">
-      <div className="text-[11px] text-gray-500">{label}</div>
-      <div className="text-sm text-gray-800">{value}</div>
+      <div className="text-xs sm:text-[11px] text-gray-500">{label}</div>
+      <div className="text-base sm:text-sm text-gray-800">{value}</div>
     </div>
   );
 }
@@ -411,62 +346,121 @@ function KeyValue({ label, value }: { label: string; value: string }) {
 function InputField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="mb-2">
-      <div className="text-[11px] text-gray-500 mb-1">{label}</div>
-      <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-sm" />
+      <div className="text-xs sm:text-[11px] text-gray-500 mb-1">{label}</div>
+      <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-base sm:text-sm" />
     </div>
   );
 }
 
 function IdentityRow({ editing = false, image, name, nik, phone, birthPlace, birthDate, subject, onChange }: { editing?: boolean; image: string; name: string; nik: string; phone: string; birthPlace: string; birthDate: string; subject?: 'Ayah' | 'Ibu'; onChange?: (field: string, value: string) => void; }) {
+  const cleanedName = name.replace(/^(Bapak|Ibu)\s+/i, '').trim();
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-      {/* Left: Photo upload helper + phone */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-5 items-start">
+      {/* Left: Photo + helper (only when editing) + phone */}
       <div>
-        <div className="flex items-center gap-4">
-          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden">
-            <Image src={image} alt={name} fill className="object-cover" />
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className={`${editing ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32'} relative rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]`}>
+            {editing && image && image.startsWith('blob:') ? (
+              <img src={image} alt={name} className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+              </svg>
+            )}
           </div>
-          <div className="text-[11px] text-gray-500 leading-4">
-            <div className="font-semibold">Upload Foto {subject}</div>
-            <div>Profile Picture should be in the standard</div>
-            <div>format png, jpg & no more than 2MB</div>
-          </div>
-        </div>
-        <div className="mt-4">
-          {editing ? (
-            <InputField label={`Nomor Telepon ${subject}`} value={phone} onChange={(v) => onChange && onChange('phone', v)} />
-          ) : (
-            <KeyValue label={`Nomor Telepon ${subject}`} value={phone} />
+          {/* Header beside image in view mode */}
+          {!editing && (
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight truncate">{subject === 'Ibu' ? 'Ibu' : 'Bapak'} {cleanedName.split(/\s+/)[0]}</div>
+              <div className="text-xs sm:text-sm text-[#397789] mt-1 truncate">No Telepon: {phone}</div>
+            </div>
+          )}
+          {editing && (
+            <div className="text-xs sm:text-[11px] text-gray-500 leading-4">
+              <div className="font-semibold">Upload Foto {subject}</div>
+              <div>Profile Picture should be in the standard</div>
+              <div>format png, jpg & no more than 2MB</div>
+            </div>
           )}
         </div>
-        <div className="mt-2">
-          {editing ? (
-            <InputField label="Tempat Lahir" value={birthPlace} onChange={(v) => onChange && onChange('birthPlace', v)} />
-          ) : (
-            <KeyValue label="Tempat Lahir" value={birthPlace} />
-          )}
-        </div>
+
+        {/* Upload control only when editing */}
+        {editing && (
+          <div className="mt-3">
+            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer text-sm">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const url = URL.createObjectURL(file);
+                    // update preview image
+                    onChange && onChange('image', url);
+                  }
+                }}
+              />
+              <span>Pilih Foto</span>
+            </label>
+          </div>
+        )}
+
+        {editing ? (
+          <>
+            <div className="mt-3 sm:mt-4">
+              <InputField label={`Nomor Telepon ${subject}`} value={phone} onChange={(v) => onChange && onChange('phone', v)} />
+            </div>
+            <div className="mt-2">
+              <InputField label="Tempat Lahir" value={birthPlace} onChange={(v) => onChange && onChange('birthPlace', v)} />
+            </div>
+          </>
+        ) : null}
       </div>
 
-      {/* Right: Name, NIK, BirthDate */}
-      <div>
+      {/* Right / Details column (view: empty spacer) */}
+      <div className="-ml-1 sm:-ml-2 md:-ml-4 lg:-ml-6">
         {editing ? (
           <>
             <InputField label="Nama Lengkap" value={name} onChange={(v) => onChange && onChange('name', v)} />
             <InputField label="NIK" value={nik} onChange={(v) => onChange && onChange('nik', v)} />
             <div className="mb-2">
-              <div className="text-[11px] text-gray-500 mb-1">Tanggal Lahir</div>
-              <input value={birthDate} onChange={(e) => onChange && onChange('birthDate', e.target.value)} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-sm" />
+              <div className="text-xs sm:text-[11px] text-gray-500 mb-1">Tanggal Lahir</div>
+              <input value={birthDate} onChange={(e) => onChange && onChange('birthDate', e.target.value)} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-base sm:text-sm" />
             </div>
           </>
         ) : (
-          <>
-            <KeyValue label="Nama Lengkap" value={name} />
-            <KeyValue label="NIK" value={nik} />
-            <KeyValue label="Tanggal Lahir" value={birthDate} />
-          </>
+          <div />
         )}
       </div>
+
+      {/* Full-width details row (view mode) */}
+      {!editing && (
+        <div className="sm:col-span-2 mt-2 w-full">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-start justify-between w-full">
+              <div>
+                <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Nama Lengkap</div>
+                <div className="text-base sm:text-lg font-semibold text-gray-900">{cleanedName}</div>
+              </div>
+              <div className="pl-6 text-left lg:w-[360px] xl:w-[420px]">
+                <div className="text-[11px] sm:text-xs text-gray-500 mb-1">NIK</div>
+                <div className="text-base sm:text-lg font-semibold text-gray-900">{nik}</div>
+              </div>
+            </div>
+            <div className="flex items-start justify-between w-full">
+              <div>
+                <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Tempat Lahir</div>
+                <div className="text-base sm:text-lg font-semibold text-gray-900">{birthPlace}</div>
+              </div>
+              <div className="pl-6 text-left lg:w-[360px] xl:w-[420px]">
+                <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Tanggal Lahir</div>
+                <div className="text-base sm:text-lg font-semibold text-gray-900">{birthDate}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

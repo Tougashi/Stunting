@@ -20,44 +20,16 @@ function Input({ label, placeholder = '', value, onChange }: { label: string; pl
 
 export default function TambahOrangTuaPage() {
   const [form, setForm] = useState({
-    father: { name: '', nik: '', phone: '', birthPlace: '', birthDate: '', photo: null as File | null, photoPreview: '' },
-    mother: { name: '', nik: '', phone: '', birthPlace: '', birthDate: '', photo: null as File | null, photoPreview: '' },
+    father: { name: '', nik: '', phone: '', birthPlace: '', birthDate: '' },
+    mother: { name: '', nik: '', phone: '', birthPlace: '', birthDate: '' },
     family: { kk: '', childrenCount: '' },
     address: { provinsi: '', kota: '', kecamatan: '', desa: '', detail: '', kodePos: '' },
   });
+  const [fatherImage, setFatherImage] = useState<string>('');
+  const [motherImage, setMotherImage] = useState<string>('');
 
   const update = (section: string, field: string, value: string) => {
     setForm((prev: any) => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
-  };
-
-  const handlePhotoChange = (section: 'father' | 'mother', file: File | null) => {
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('File harus berupa gambar (png, jpg, jpeg)');
-        return;
-      }
-      
-      // Validate file size (2MB = 2 * 1024 * 1024 bytes)
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Ukuran file tidak boleh lebih dari 2MB');
-        return;
-      }
-
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm((prev: any) => ({
-          ...prev,
-          [section]: {
-            ...prev[section],
-            photo: file,
-            photoPreview: reader.result as string
-          }
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleSubmit = () => {
@@ -81,30 +53,26 @@ export default function TambahOrangTuaPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <div>
                     <div className="flex items-center gap-4">
-                      <label htmlFor="father-photo" className="cursor-pointer">
-                        <div className="w-16 h-16 rounded-2xl bg-gray-100 overflow-hidden relative hover:opacity-80 transition-opacity">
-                          {form.father.photoPreview ? (
-                            <img src={form.father.photoPreview} alt="Foto Ayah" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                      </label>
-                      <input
-                        id="father-photo"
-                        type="file"
-                        accept="image/png,image/jpeg,image/jpg"
-                        className="hidden"
-                        onChange={(e) => handlePhotoChange('father', e.target.files?.[0] || null)}
-                      />
+                      <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
+                        {fatherImage ? (
+                          <img src={fatherImage} alt="foto ayah" className="absolute inset-0 w-full h-full object-cover" />
+                        ) : (
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+                          </svg>
+                        )}
+                      </div>
                       <div className="text-[11px] text-gray-500 leading-4">
                         <div className="font-semibold">Upload Foto Ayah</div>
                         <div>Profile Picture should be in the standard</div>
                         <div>format png, jpg & no more than 2MB</div>
+                        <label className="inline-flex mt-2 px-2 py-1 rounded-md border border-gray-300 cursor-pointer hover:bg-gray-50 text-xs text-gray-700">
+                          Pilih Foto
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setFatherImage(URL.createObjectURL(file));
+                          }} />
+                        </label>
                       </div>
                     </div>
                     <div className="mt-4">
@@ -123,30 +91,26 @@ export default function TambahOrangTuaPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <div>
                     <div className="flex items-center gap-4">
-                      <label htmlFor="mother-photo" className="cursor-pointer">
-                        <div className="w-16 h-16 rounded-2xl bg-gray-100 overflow-hidden relative hover:opacity-80 transition-opacity">
-                          {form.mother.photoPreview ? (
-                            <img src={form.mother.photoPreview} alt="Foto Ibu" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                      </label>
-                      <input
-                        id="mother-photo"
-                        type="file"
-                        accept="image/png,image/jpeg,image/jpg"
-                        className="hidden"
-                        onChange={(e) => handlePhotoChange('mother', e.target.files?.[0] || null)}
-                      />
+                      <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
+                        {motherImage ? (
+                          <img src={motherImage} alt="foto ibu" className="absolute inset-0 w-full h-full object-cover" />
+                        ) : (
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+                          </svg>
+                        )}
+                      </div>
                       <div className="text-[11px] text-gray-500 leading-4">
                         <div className="font-semibold">Upload Foto Ibu</div>
                         <div>Profile Picture should be in the standard</div>
                         <div>format png, jpg & no more than 2MB</div>
+                        <label className="inline-flex mt-2 px-2 py-1 rounded-md border border-gray-300 cursor-pointer hover:bg-gray-50 text-xs text-gray-700">
+                          Pilih Foto
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setMotherImage(URL.createObjectURL(file));
+                          }} />
+                        </label>
                       </div>
                     </div>
                     <div className="mt-4">
