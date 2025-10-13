@@ -26,6 +26,13 @@ export default function CameraPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
 
+  // Computed classes
+  const getVideoPreviewClass = () => {
+    const base = 'w-full h-[600px] object-cover';
+    // Force un-mirrored preview for handphone by flipping horizontally
+    return selectedCamera === 'Camera Handphone' ? `${base} [transform:scaleX(-1)]` : base;
+  };
+
   // Get initial camera type from URL params
   useEffect(() => {
     const cameraType = searchParams?.get('camera');
@@ -57,7 +64,8 @@ export default function CameraPage() {
           video: { 
             width: 1280, 
             height: 720,
-            facingMode: selectedCamera === 'Camera Handphone' ? 'user' : 'environment'
+            // Use rear camera to avoid mirrored preview on mobile
+            facingMode: 'environment'
           } 
         });
         videoRef.current.srcObject = stream;
@@ -418,7 +426,12 @@ export default function CameraPage() {
         if (context && video.videoWidth > 0 && video.videoHeight > 0) {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
-          context.drawImage(video, 0, 0);
+          // Draw un-mirrored (video may be mirrored by CSS). Flip canvas horizontally first.
+          context.save();
+          context.translate(canvas.width, 0);
+          context.scale(-1, 1);
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          context.restore();
           
           // Get data URL for preview
           capturedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
@@ -790,7 +803,7 @@ export default function CameraPage() {
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-[600px] object-cover"
+                  className={getVideoPreviewClass()}
                 />
               ) : (
                 <img
@@ -805,7 +818,7 @@ export default function CameraPage() {
                   <img
                     src={capturedImage}
                     alt="Captured"
-                    className="w-full h-[600px] object-cover"
+                    className="w-full h-[600px] object-cover [transform:scaleX(1)]"
                   />
                 ) : (
                   <div className="w-full h-[600px] bg-gray-200 flex items-center justify-center">
@@ -849,8 +862,8 @@ export default function CameraPage() {
                 </div>
               </div>
 
-              {/* Camera Status - Left Bottom */}
-              <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/70 text-white px-3 py-2 rounded-lg">
+              {/* Camera Status - Top Center */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/70 text-white px-3 py-2 rounded-lg z-20">
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-sm">{selectedCamera}</span>
                 {isUploading && (

@@ -180,7 +180,10 @@ export default function ScanPage() {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
                 {/* Left side - Tambah Anak and Filter */}
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                  <button className="bg-[#407A81] text-white px-6 py-2 rounded-md hover:bg-[#326269] transition-colors font-medium whitespace-nowrap">
+                  <button
+                    onClick={() => router.push('/anak/tambah')}
+                    className="bg-[#407A81] text-white px-6 py-2 rounded-md hover:bg-[#326269] transition-colors font-medium whitespace-nowrap"
+                  >
                     Tambah Anak
                   </button>
                   
