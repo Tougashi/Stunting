@@ -323,23 +323,11 @@ function ChildCard({ child, onClick }: ChildCardProps) {
         <div className="flex items-center gap-3">
           {/* Avatar */}
           <div className="relative">
-            {child.name === 'Rehand' ? (
-              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" fill="#9CA3AF"/>
-                  <path d="M12 14C7.58172 14 4 17.5817 4 22H20C20 17.5817 16.4183 14 12 14Z" fill="#9CA3AF"/>
+             <div className="w-10 h-10 rounded-full bg-[#E5F3F5] flex items-center justify-center text-[#397789] shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
                 </svg>
               </div>
-            ) : (
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
-                <Image
-                  src="/image/icon/bayi-icon.svg"
-                  alt={child.name}
-                  width={24}
-                  height={24}
-                />
-              </div>
-            )}
           </div>
           
           {/* Info */}

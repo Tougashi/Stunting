@@ -25,6 +25,8 @@ export default function TambahOrangTuaPage() {
     family: { kk: '', childrenCount: '' },
     address: { provinsi: '', kota: '', kecamatan: '', desa: '', detail: '', kodePos: '' },
   });
+  const [fatherImage, setFatherImage] = useState<string>('');
+  const [motherImage, setMotherImage] = useState<string>('');
 
   const update = (section: string, field: string, value: string) => {
     setForm((prev: any) => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
@@ -51,11 +53,26 @@ export default function TambahOrangTuaPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <div>
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-2xl bg-gray-100" />
+                      <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
+                        {fatherImage ? (
+                          <img src={fatherImage} alt="foto ayah" className="absolute inset-0 w-full h-full object-cover" />
+                        ) : (
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+                          </svg>
+                        )}
+                      </div>
                       <div className="text-[11px] text-gray-500 leading-4">
                         <div className="font-semibold">Upload Foto Ayah</div>
                         <div>Profile Picture should be in the standard</div>
                         <div>format png, jpg & no more than 2MB</div>
+                        <label className="inline-flex mt-2 px-2 py-1 rounded-md border border-gray-300 cursor-pointer hover:bg-gray-50 text-xs text-gray-700">
+                          Pilih Foto
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setFatherImage(URL.createObjectURL(file));
+                          }} />
+                        </label>
                       </div>
                     </div>
                     <div className="mt-4">
@@ -74,11 +91,26 @@ export default function TambahOrangTuaPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <div>
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-2xl bg-gray-100" />
+                      <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
+                        {motherImage ? (
+                          <img src={motherImage} alt="foto ibu" className="absolute inset-0 w-full h-full object-cover" />
+                        ) : (
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+                          </svg>
+                        )}
+                      </div>
                       <div className="text-[11px] text-gray-500 leading-4">
                         <div className="font-semibold">Upload Foto Ibu</div>
                         <div>Profile Picture should be in the standard</div>
                         <div>format png, jpg & no more than 2MB</div>
+                        <label className="inline-flex mt-2 px-2 py-1 rounded-md border border-gray-300 cursor-pointer hover:bg-gray-50 text-xs text-gray-700">
+                          Pilih Foto
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setMotherImage(URL.createObjectURL(file));
+                          }} />
+                        </label>
                       </div>
                     </div>
                     <div className="mt-4">
