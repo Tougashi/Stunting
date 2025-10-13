@@ -239,12 +239,12 @@ export default function ResultPage() {
       {/* Detail Modal */}
       {showDetailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDetailModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-6 md:p-8">
-            <h3 className="text-2xl font-bold text-center mb-6">Hasil Pemindaian</h3>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowDetailModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
+            <h3 className="text-2xl font-bold text-center mb-8">Hasil Pemindaian</h3>
 
-            {/* Image */}
-            <div className="relative w-full h-72 md:h-80 rounded-xl overflow-hidden shadow-md mb-6">
+            {/* Image Section */}
+            <div className="relative w-full h-64 rounded-xl overflow-hidden shadow-md mb-8" style={{ backgroundColor: '#FFE5F0' }}>
               <Image
                 src="/image/icon/pengukuran-anak.jpg"
                 alt="Hasil pengukuran"
@@ -253,31 +253,29 @@ export default function ResultPage() {
               />
             </div>
 
-            {/* Measurement cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-[#E9F6F7] rounded-xl p-6 border border-cyan-200">
-                <p className="text-base text-gray-600 mb-3 text-center font-medium">Tinggi Badan</p>
-                <div className="flex items-center justify-between">
-                  <div className="w-28"></div>
-                  <p className="text-4xl font-bold text-[#407A81] -mt-1">{childData.height}</p>
-                  <Image src="/image/icon/tinggi-badan.svg" alt="Tinggi" width={112} height={112} className="w-28 h-28" />
+            {/* Measurement Cards */}
+            <div className="flex gap-6 mb-8">
+              <div className="flex-1 bg-[#E5F5F7] rounded-xl p-8 flex flex-col items-center border border-[#CDE6EA]">
+                <span className="text-lg font-medium text-gray-600 mb-4">Tinggi Badan</span>
+                <div className="flex items-center gap-4">
+                  <Image src="/image/icon/tinggi-badan.svg" alt="Tinggi Badan" width={80} height={80} />
+                  <span className="text-4xl font-bold text-[#407A81]">{childData.height}</span>
                 </div>
               </div>
-              <div className="bg-[#E9F6F7] rounded-xl p-6 border border-cyan-200">
-                <p className="text-base text-gray-600 mb-3 text-center font-medium">Berat Badan</p>
-                <div className="flex items-center justify-between">
-                  <Image src="/image/icon/berat-badan.svg" alt="Berat" width={112} height={112} className="w-28 h-28" />
-                  <p className="text-4xl font-bold text-[#407A81] -mt-1">{childData.weight}</p>
-                  <div className="w-28"></div>
+              <div className="flex-1 bg-[#E5F5F7] rounded-xl p-8 flex flex-col items-center border border-[#CDE6EA]">
+                <span className="text-lg font-medium text-gray-600 mb-4">Berat Badan</span>
+                <div className="flex items-center gap-4">
+                  <Image src="/image/icon/berat-badan.svg" alt="Berat Badan" width={80} height={80} />
+                  <span className="text-4xl font-bold text-[#407A81]">{childData.weight}</span>
                 </div>
               </div>
             </div>
 
-            {/* Close button */}
+            {/* Close Button */}
             <div className="flex justify-center">
               <button
                 onClick={() => setShowDetailModal(false)}
-                className="w-full md:w-1/2 bg-[#407A81] text-white py-3 rounded-full hover:bg-[#326269] transition-colors cursor-pointer"
+                className="min-w-[300px] bg-[#407A81] text-white py-3 rounded-full hover:bg-[#326269] transition-colors cursor-pointer font-semibold text-lg shadow-md"
               >
                 Tutup
               </button>

@@ -4,9 +4,14 @@ import React, { useMemo, useState } from 'react';
 import { Layout } from '@/components';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FiMoreVertical } from 'react-icons/fi';
+import { useRouter } from 'next/navigation';
+import { FiMoreVertical, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { useParams } from 'next/navigation';
 
 export default function OrangTuaDetailPage() {
+  const params = useParams();
+  const parentId = (params?.id as string) || '';
+  
   const parent = {
     father: {
       name: 'Bapak Mustafa',
@@ -43,6 +48,7 @@ export default function OrangTuaDetailPage() {
     ],
   };
 
+  const router = useRouter();
   const initialData = useMemo(() => parent, []);
   const [data, setData] = useState(initialData);
   const [isEditing, setIsEditing] = useState(false);
@@ -52,6 +58,8 @@ export default function OrangTuaDetailPage() {
     name: '', nik: '', tempat: '', tgl: '', age: '', unit: 'bulan', order: '', gender: 'L', berat: '', tinggi: '', lingkar: '', photo: '' as string | null,
   });
   const [showDelete, setShowDelete] = useState(false);
+  const [childMenuOpen, setChildMenuOpen] = useState<string | null>(null);
+  const [childToDelete, setChildToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const update = (path: string, value: string | number) => {
     setData((prev) => {
@@ -213,13 +221,50 @@ export default function OrangTuaDetailPage() {
             >
               <div className="p-4 flex items-center justify-between">
                 <div className="font-semibold text-gray-700 text-lg">Anak</div>
-                <button onClick={() => setShowAddChild(true)} className="px-4 py-2 rounded-full bg-[#407A81] text-white text-sm hover:bg-[#326269]">Tambah Anak</button>
+                <button onClick={() => router.push(`/anak/tambah/form?parentId=${parentId}`)} className="px-4 py-2 rounded-full bg-[#407A81] text-white text-sm hover:bg-[#326269] cursor-pointer">Tambah Anak</button>
               </div>
               <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-3 gap-6">
                 {parent.children.map((c) => (
                   <div key={c.id} className="relative rounded-md border border-gray-200 bg-white px-3 py-3" style={{ boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D' }}>
-                    <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"><FiMoreVertical /></button>
-                    <div className="flex items-center gap-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setChildMenuOpen(childMenuOpen === c.id ? null : c.id);
+                      }}
+                      className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 z-10"
+                    >
+                      <FiMoreVertical />
+                    </button>
+                    {childMenuOpen === c.id && (
+                      <>
+                        <div className="fixed inset-0 z-20" onClick={() => setChildMenuOpen(null)} />
+                        <div className="absolute top-8 right-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-30 min-w-[120px]">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setChildMenuOpen(null);
+                              router.push(`/anak/edit/${c.id}`);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <FiEdit2 className="text-[#407A81]" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setChildMenuOpen(null);
+                              setChildToDelete({ id: c.id, name: c.name });
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <FiTrash2 />
+                            Hapus
+                          </button>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push(`/profile/${c.id}`)}>
                       <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-gray-100">
                         <Image src={c.avatar} alt={c.name} fill className="object-cover p-1" />
                       </div>
@@ -302,7 +347,7 @@ export default function OrangTuaDetailPage() {
                 </div>
               </div>
             )}
-            {/* Delete confirm modal */}
+            {/* Delete Parent confirm modal */}
             {showDelete && (
               <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDelete(false)} />
@@ -311,6 +356,34 @@ export default function OrangTuaDetailPage() {
                   <div className="space-y-3">
                     <button onClick={() => { setShowDelete(false); console.log('hapus orang tua'); }} className="w-full px-4 py-2 rounded-full bg-[#407A81] text-white hover:bg-[#326269]">Hapus</button>
                     <button onClick={() => setShowDelete(false)} className="w-full px-4 py-2 rounded-full border-2 border-[#407A81] text-[#407A81] hover:bg-[#E7F5F7]">Batalkan</button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Delete Child confirm modal */}
+            {childToDelete && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setChildToDelete(null)} />
+                <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                  <div className="text-center text-lg font-semibold text-gray-900 mb-4">
+                    Apakah anda yakin ingin menghapus {childToDelete.name}?
+                  </div>
+                  <div className="space-y-3">
+                    <button 
+                      onClick={() => { 
+                        setChildToDelete(null); 
+                        console.log('hapus anak:', childToDelete.id); 
+                      }} 
+                      className="w-full px-4 py-2 rounded-full bg-[#407A81] text-white hover:bg-[#326269]"
+                    >
+                      Hapus
+                    </button>
+                    <button 
+                      onClick={() => setChildToDelete(null)} 
+                      className="w-full px-4 py-2 rounded-full border-2 border-[#407A81] text-[#407A81] hover:bg-[#E7F5F7]"
+                    >
+                      Batalkan
+                    </button>
                   </div>
                 </div>
               </div>
