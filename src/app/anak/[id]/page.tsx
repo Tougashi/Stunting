@@ -47,7 +47,7 @@ const dummyChildrenData: { [key: string]: ChildDetailData } = {
   '1': {
     id: '1',
     name: 'Emma Jhon',
-    photo: '/image/icon/bayi-icon.svg',
+    photo: '/image/icon/balita.webp',
     gender: 'Laki Laki',
     age: 2,
     nomorKK: '0082110211223',
@@ -71,7 +71,7 @@ const dummyChildrenData: { [key: string]: ChildDetailData } = {
   '2': {
     id: '2',
     name: 'Siti Rosidah',
-    photo: '/image/icon/bayi-icon.svg',
+    photo: '/image/icon/balita.webp',
     gender: 'Perempuan',
     age: 3,
     nomorKK: '0082110211223',
@@ -219,6 +219,7 @@ export default function ProfileAnakPage() {
   
   const child = getChildData(childId);
   const scanHistory = getChildScanHistory(childId);
+  const [form, setForm] = useState<ChildDetailData>(child);
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -276,7 +277,7 @@ export default function ProfileAnakPage() {
 
         {/* Content */}
         <div className="relative z-20 py-8 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             {/* Header with Back Button */}
             <div className="flex items-center gap-3 mb-8">
               <button
@@ -329,21 +330,34 @@ export default function ProfileAnakPage() {
               <div className="px-5 sm:px-8 pb-6 sm:pb-8">
                 {/* Photo and Name */}
                 <div className="flex flex-col items-center mb-8 sm:mb-10">
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mb-4 sm:mb-5">
-                    {child.photo ? (
-                      <Image
-                        src={child.photo}
-                        alt={child.name}
-                        width={48}
-                        height={48}
-                      />
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full flex items-center justify-center mb-3 sm:mb-4 overflow-hidden bg-[#E5F3F5] text-[#397789]">
+                    {form.photo ? (
+                      <img src={form.photo} alt={form.name} className="w-full h-full object-cover" />
                     ) : (
-                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" fill="#9CA3AF"/>
-                        <path d="M12 14C7.58172 14 4 17.5817 4 22H20C20 17.5817 16.4183 14 12 14Z" fill="#9CA3AF"/>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
                       </svg>
                     )}
                   </div>
+                  {isEditing && (
+                    <div className="mb-2">
+                      <label className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer text-sm">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const url = URL.createObjectURL(file);
+                              setForm((prev) => ({ ...prev, photo: url }));
+                            }
+                          }}
+                        />
+                        <span>Ganti Foto</span>
+                      </label>
+                    </div>
+                  )}
                   {isEditing ? (
                     <div className="w-full max-w-md grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="sm:col-span-2">
@@ -364,9 +378,9 @@ export default function ProfileAnakPage() {
                     </div>
                   ) : (
                     <>
-                      <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 sm:mb-2 text-center">{child.name}</h3>
-                      <p className="text-base sm:text-lg text-gray-600">{child.gender}</p>
-                      <p className="text-base sm:text-lg text-gray-600">Umur : {child.age} tahun</p>
+                      <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 sm:mb-2 text-center">{form.name}</h3>
+                      <p className="text-base sm:text-lg text-gray-600">{form.gender}</p>
+                      <p className="text-base sm:text-lg text-gray-600">Umur : {form.age} tahun</p>
                     </>
                   )}
                 </div>
@@ -410,15 +424,27 @@ export default function ProfileAnakPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                       <div>
                         <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Berat Badan Lahir</label>
-                        <p className="text-base sm:text-lg text-gray-900">{child.beratBadanLahir}</p>
+                        {isEditing ? (
+                          <input value={form.beratBadanLahir} onChange={(e) => setForm((p) => ({ ...p, beratBadanLahir: e.target.value }))} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-sm sm:text-base" />
+                        ) : (
+                          <p className="text-base sm:text-lg text-gray-900">{form.beratBadanLahir}</p>
+                        )}
                       </div>
                       <div>
                         <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Tinggi Badan Lahir</label>
-                        <p className="text-base sm:text-lg text-gray-900">{child.tinggiBadanLahir}</p>
+                        {isEditing ? (
+                          <input value={form.tinggiBadanLahir} onChange={(e) => setForm((p) => ({ ...p, tinggiBadanLahir: e.target.value }))} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-sm sm:text-base" />
+                        ) : (
+                          <p className="text-base sm:text-lg text-gray-900">{form.tinggiBadanLahir}</p>
+                        )}
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-2">
                         <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Lingkar Kepala Lahir</label>
-                        <p className="text-base sm:text-lg text-gray-900">{child.lingkarKepalaLahir}</p>
+                        {isEditing ? (
+                          <input value={form.lingkarKepalaLahir} onChange={(e) => setForm((p) => ({ ...p, lingkarKepalaLahir: e.target.value }))} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-sm sm:text-base" />
+                        ) : (
+                          <p className="text-base sm:text-lg text-gray-900">{form.lingkarKepalaLahir}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -526,8 +552,8 @@ export default function ProfileAnakPage() {
                           </div>
                         </div>
 
-                        {/* Desktop Layout */}
-                        <div className="hidden sm:flex sm:items-center gap-4 flex-1">
+                        {/* Desktop Layout (single row) */}
+                        <div className="hidden sm:flex sm:items-center sm:flex-wrap lg:flex-nowrap gap-4 md:gap-6 w-full">
                         {/* avatar */}
                           <div className="w-12 h-12 rounded-full bg-[#E5F3F5] flex items-center justify-center text-[#397789] shrink-0">
                           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -549,8 +575,40 @@ export default function ProfileAnakPage() {
                               <FiClock size={14} />
                                 {row.timeAgo}
                             </span>
-                            </div>
                           </div>
+                        </div>
+                        {/* height pill */}
+                          <div 
+                            className="flex items-center justify-center gap-2.5"
+                            style={{ width: '140px', height: '56px', borderRadius: '16px', border: '1px solid rgba(57, 119, 137, 1)', backgroundColor: 'rgba(239, 255, 254, 1)' }}
+                          >
+                            <Image src="/image/icon/tinggi-badan.svg" alt="tinggi" width={31} height={38} style={{ width: '31px', height: '38px' }} />
+                            <span className="text-base font-semibold text-[#397789]">{row.height} cm</span>
+                        </div>
+                        {/* weight pill */}
+                          <div 
+                            className="flex items-center justify-center gap-2.5"
+                            style={{ width: '140px', height: '56px', borderRadius: '16px', border: '1px solid rgba(57, 119, 137, 1)', backgroundColor: 'rgba(239, 255, 254, 1)' }}
+                          >
+                            <Image src="/image/icon/berat-badan.svg" alt="berat" width={20} height={38} style={{ width: '20px', height: '38px' }} />
+                            <span className="text-base font-semibold text-[#397789]">{row.weight} Kg</span>
+                        </div>
+                        {/* status */}
+                          <div className="shrink-0" style={{ width: '120px' }}>
+                            {row.status === 'normal' && (
+                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#E8F5E9] text-[#4CAF50]">Sehat</span>
+                            )}
+                            {row.status === 'beresiko' && (
+                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFF9E6] text-[#FFA726]">Beresiko</span>
+                            )}
+                            {row.status === 'stunting' && (
+                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFEBEE] text-[#EF5350]">Stunting</span>
+                          )}
+                        </div>
+                          {/* action button */}
+                          <button onClick={() => handleViewScanDetail(row.id)} className="shrink-0 w-10 h-10 rounded-full border-2 border-[#397789] flex items-center justify-center text-[#397789] hover:bg-[#397789] hover:text-white transition-colors cursor-pointer">
+                          <FiArrowRightCircle size={20} />
+                        </button>
                         </div>
 
                         {/* Mobile: Measurement pills and status */}
@@ -589,41 +647,7 @@ export default function ProfileAnakPage() {
                           </div>
                         </div>
 
-                        {/* Desktop: Measurement pills and status */}
-                        <div className="hidden sm:flex sm:items-center gap-4">
-                          {/* height pill */}
-                          <div 
-                            className="flex items-center justify-center gap-2.5"
-                            style={{ width: '140px', height: '56px', borderRadius: '16px', border: '1px solid rgba(57, 119, 137, 1)', backgroundColor: 'rgba(239, 255, 254, 1)' }}
-                          >
-                            <Image src="/image/icon/tinggi-badan.svg" alt="tinggi" width={31} height={38} style={{ width: '31px', height: '38px' }} />
-                            <span className="text-base font-semibold text-[#397789]">{row.height} cm</span>
-                          </div>
-                        {/* weight pill */}
-                          <div 
-                            className="flex items-center justify-center gap-2.5"
-                            style={{ width: '140px', height: '56px', borderRadius: '16px', border: '1px solid rgba(57, 119, 137, 1)', backgroundColor: 'rgba(239, 255, 254, 1)' }}
-                          >
-                            <Image src="/image/icon/berat-badan.svg" alt="berat" width={20} height={38} style={{ width: '20px', height: '38px' }} />
-                            <span className="text-base font-semibold text-[#397789]">{row.weight} Kg</span>
-                        </div>
-                        {/* status */}
-                          <div className="shrink-0" style={{ width: '100px' }}>
-                            {row.status === 'normal' && (
-                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#E8F5E9] text-[#4CAF50]">Sehat</span>
-                            )}
-                            {row.status === 'beresiko' && (
-                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFF9E6] text-[#FFA726]">Beresiko</span>
-                            )}
-                            {row.status === 'stunting' && (
-                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFEBEE] text-[#EF5350]">Stunting</span>
-                          )}
-                        </div>
-                          {/* action button */}
-                          <button onClick={() => handleViewScanDetail(row.id)} className="shrink-0 w-10 h-10 rounded-full border-2 border-[#397789] flex items-center justify-center text-[#397789] hover:bg-[#397789] hover:text-white transition-colors cursor-pointer">
-                          <FiArrowRightCircle size={20} />
-                        </button>
-                        </div>
+                        {/* Desktop block merged above */}
                       </div>
                     ))}
                   </div>
