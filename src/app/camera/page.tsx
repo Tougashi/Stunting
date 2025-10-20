@@ -21,10 +21,23 @@ export default function CameraPage() {
   const RASPBERRY_CAPTURE_URL = 'http://10.13.0.22:8000/capture';
   const RASPBERRY_CALIBRATE_URL = 'http://10.13.0.22:8000/calibrate/aruco';
   const RASPBERRY_DIRECT_CAPTURE_URL = 'http://10.13.0.22:8000/direct-capture'; // Alternative endpoint if available
+  
+  // Production API URLs - UNTUK CAMERA HANDPHONE
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://comvit-production.up.railway.app';
+  const API_CALIBRATE_URL = `${API_BASE_URL}/calibrate/aruco`; // Production calibration endpoint
+  const API_PING_URL = `${API_BASE_URL}/ping`; // Production ping endpoint - https://comvit-production.up.railway.app/ping
+  const API_CAPTURE_URL = `${API_BASE_URL}/capture`; // Production capture endpoint - https://comvit-production.up.railway.app/capture
+  
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [calibrationResult, setCalibrationResult] = useState<string | null>(null);
+  const [pingResult, setPingResult] = useState<{ status: string; message?: string; responseTime?: number } | null>(null);
+  
+  // Child data state
+  const [childData, setChildData] = useState<{ id: string; name: string; gender: string; age: number } | null>(null);
+  const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null); // Store captured image blob
 
   // Computed classes
   const getVideoPreviewClass = () => {
@@ -41,6 +54,101 @@ export default function CameraPage() {
     } else {
       setSelectedCamera('Camera Raspberry');
     }
+  }, [searchParams]);
+
+  // Load child data from URL params and localStorage/API
+  useEffect(() => {
+    const loadChildData = async () => {
+      const childId = searchParams?.get('child');
+      
+      // Dummy data untuk testing
+      const dummyChildren = [
+        { id: 'child_001', name: 'Ahmad Fadhil', gender: 'male', age: 12 },
+        { id: 'child_002', name: 'Siti Aisyah', gender: 'female', age: 18 },
+        { id: 'child_003', name: 'Budi Santoso', gender: 'male', age: 24 },
+        { id: 'child_004', name: 'Putri Ayu', gender: 'female', age: 15 },
+        { id: 'child_005', name: 'Dika Pratama', gender: 'male', age: 20 },
+      ];
+      
+      if (!childId) {
+        console.warn('⚠️ No child ID in URL params');
+        // Set default dummy data for testing
+        console.log('🧪 Using default dummy data for testing...');
+        setChildData(dummyChildren[0]); // Default: Ahmad Fadhil
+        return;
+      }
+
+      console.log('👶 Loading child data for ID:', childId);
+
+      // Check if childId matches dummy data
+      const dummyChild = dummyChildren.find(c => c.id === childId);
+      if (dummyChild) {
+        console.log('🧪 Using dummy data:', dummyChild);
+        setChildData(dummyChild);
+        return;
+      }
+
+      // Try to get from localStorage first
+      try {
+        const storedChildren = localStorage.getItem('children');
+        if (storedChildren) {
+          const children = JSON.parse(storedChildren);
+          const child = children.find((c: { id: string }) => c.id === childId);
+          
+          if (child) {
+            console.log('✅ Child data loaded from localStorage:', child);
+            setChildData({
+              id: child.id,
+              name: child.name || 'Unknown',
+              gender: child.gender || 'male',
+              age: child.age || 12
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('❌ Failed to load from localStorage:', error);
+      }
+
+      // If not found in localStorage, try to fetch from API
+      try {
+        console.log('📡 Fetching child data from API...');
+        const response = await fetch(`/api/children/${childId}`);
+        
+        if (response.ok) {
+          const child = await response.json();
+          console.log('✅ Child data loaded from API:', child);
+          
+          setChildData({
+            id: child.id,
+            name: child.name || 'Unknown',
+            gender: child.gender || 'male',
+            age: child.age || 12
+          });
+        } else {
+          console.warn('⚠️ Child not found in API, using dummy data');
+          // Use dummy data if API fails
+          setChildData({
+            id: childId,
+            name: 'Anak Test',
+            gender: 'male',
+            age: 12
+          });
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch from API:', error);
+        // Use dummy data if API fails
+        console.log('🧪 Using dummy data as fallback...');
+        setChildData({
+          id: childId,
+          name: 'Anak Test',
+          gender: 'male',
+          age: 12
+        });
+      }
+    };
+
+    loadChildData();
   }, [searchParams]);
 
   // Initialize camera (only for Handphone - local device camera)
@@ -397,18 +505,134 @@ export default function CameraPage() {
     }
   };
 
+  // Upload to Production API (ComViT) - For Camera Handphone
+  const uploadToProductionAPI = async (imageBlob: Blob): Promise<string | null> => {
+    try {
+      console.log('📤 Starting upload to Production API (ComViT)...');
+      console.log('API URL:', API_CAPTURE_URL);
+      console.log('Image blob size:', imageBlob.size);
+      
+      setIsUploading(true);
+      
+      // Use child data from state
+      if (!childData) {
+        throw new Error('Child data not loaded. Please select a child first.');
+      }
+      
+      console.log('👶 Using child data:', childData);
+      
+      // Prepare required parameters from state
+      const gender = childData.gender;
+      const age = childData.age;
+      const ref = childData.id;
+      
+      console.log('📋 Request parameters:', { gender, age, ref });
+      
+      // Validate parameters
+      if (!gender || !age || !ref) {
+        throw new Error('Missing required parameters: gender, age, or ref');
+      }
+      
+      // Create FormData with ONLY image (gender, age, ref go in query params)
+      const formData = new FormData();
+      const filename = `capture_handphone_${Date.now()}.jpg`;
+      formData.append('image', imageBlob, filename);
+      
+      // Build URL with query parameters
+      const urlWithParams = `${API_CAPTURE_URL}?gender=${encodeURIComponent(gender)}&age=${age}&ref=${encodeURIComponent(ref)}`;
+      
+      console.log('📝 Request details:');
+      console.log('  - URL with params:', urlWithParams);
+      console.log('  - gender:', gender);
+      console.log('  - age:', age);
+      console.log('  - ref:', ref);
+      console.log('  - image:', filename, '(', imageBlob.size, 'bytes)');
+      
+      // Upload to Production API
+      console.log('🚀 Sending request to ComViT Production API...');
+      const uploadResponse = await fetch(urlWithParams, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'accept': 'application/json',
+        },
+        mode: 'cors',
+      });
+      
+      console.log('📡 Response received:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        ok: uploadResponse.ok
+      });
+      
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text().catch(() => 'No error text available');
+        console.error('❌ Upload failed:', {
+          status: uploadResponse.status,
+          statusText: uploadResponse.statusText,
+          errorText
+        });
+        throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
+      }
+      
+      // Get raw response text first for better debugging
+      const responseText = await uploadResponse.text();
+      console.log('📄 Raw response text:', responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('❌ Failed to parse JSON response:', parseError);
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+      
+      console.log('📥 Parsed JSON response:', result);
+      
+      // Check if response is successful
+      if (result.status === 'success' || uploadResponse.ok) {
+        console.log('✅ Upload to Production API successful');
+        
+        // Return the reference or image identifier
+        const imageIdentifier = result.image || result.ref || ref;
+        console.log('✅ Image identifier:', imageIdentifier);
+        return imageIdentifier;
+      } else {
+        console.error('❌ API returned error status:', result);
+        throw new Error(result.message || 'Upload failed - server returned error status');
+      }
+      
+    } catch (error) {
+      console.error('❌ Upload to Production API error:', error);
+      
+      // Check if it's a network error
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error('🌐 Network error - possible CORS or connectivity issue');
+        setErrorMessage('Gagal terhubung ke server ComViT. Periksa koneksi internet.');
+      } else {
+        setErrorMessage(error instanceof Error ? error.message : 'Gagal mengunggah gambar ke server. Silakan coba lagi.');
+      }
+      
+      setTimeout(() => setErrorMessage(null), 8000);
+      
+      return null;
+    } finally {
+      setIsUploading(false);
+      console.log('🏁 Upload to Production API process finished');
+    }
+  };
+
   const handleCapture = async () => {
     console.log('🎯 Capture button clicked!');
     console.log('Selected camera:', selectedCamera);
     console.log('Is capturing:', isCapturing);
-    console.log('Is uploading:', isUploading);
     
     setIsCapturing(true);
     setErrorMessage(null);
     
     try {
       let capturedDataUrl: string | null = null;
-      let uploadedImageName: string | null = null;
+      let capturedImageBlob: Blob | null = null;
       
       // Capture from local device camera
       if (selectedCamera === 'Camera Handphone' && videoRef.current && canvasRef.current) {
@@ -437,8 +661,19 @@ export default function CameraPage() {
           capturedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
           console.log('✅ Handphone capture successful, data URL length:', capturedDataUrl.length);
           
-          // Upload to server and get the uploaded image filename
-          uploadedImageName = await uploadCapturedImage(capturedDataUrl);
+          // Convert to blob and store it (don't upload yet)
+          console.log('� Converting to blob for later upload...');
+          capturedImageBlob = await new Promise<Blob | null>((resolve) => {
+            canvas.toBlob(resolve, 'image/jpeg', 0.9);
+          });
+          
+          if (capturedImageBlob) {
+            setCapturedBlob(capturedImageBlob);
+            console.log('✅ Image blob stored:', {
+              size: capturedImageBlob.size,
+              type: capturedImageBlob.type
+            });
+          }
           
         } else {
           console.error('❌ Cannot capture from handphone camera:', {
@@ -451,14 +686,17 @@ export default function CameraPage() {
         }
       } else if (selectedCamera === 'Camera Raspberry') {
         console.log('🍓 Using direct Raspberry capture...');
-        // For Raspberry, capture directly from the API (no CORS issue)
-        uploadedImageName = await captureFromRaspberry();
+        // For Raspberry, capture directly from the API (upload immediately)
+        const uploadedImageName = await captureFromRaspberry();
         
         if (uploadedImageName) {
           // Create a preview image URL from the server
           const previewUrl = `${RASPBERRY_CAPTURE_URL.replace('/capture', '')}/images/${uploadedImageName}`;
           console.log('📷 Setting preview URL:', previewUrl);
           capturedDataUrl = previewUrl;
+          
+          // Store for Raspberry (already uploaded)
+          sessionStorage.setItem('uploadedImageName', uploadedImageName);
         }
       } else {
         console.error('❌ Capture conditions not met:', {
@@ -470,24 +708,14 @@ export default function CameraPage() {
         throw new Error('Kondisi kamera tidak terpenuhi');
       }
       
-      if (capturedDataUrl && uploadedImageName) {
+      // Show preview for both camera types
+      if (capturedDataUrl) {
         console.log('🖼️ Setting captured image for preview...');
-        // Set captured image for preview
         setCapturedImage(capturedDataUrl);
         setShowCaptureResult(true);
-        
-        // Store the uploaded image name for later use
-        sessionStorage.setItem('uploadedImageName', uploadedImageName);
-        console.log('✅ Image processed successfully:', uploadedImageName);
-        
-      } else if (uploadedImageName) {
-        // Raspberry capture successful but no preview image
-        console.log('✅ Raspberry capture successful, no preview available');
-        setShowCaptureResult(true);
-        sessionStorage.setItem('uploadedImageName', uploadedImageName);
-        
+        console.log('✅ Image captured successfully');
       } else {
-        console.error('❌ No image data captured or uploaded');
+        console.error('❌ No image data captured');
         setErrorMessage('Tidak ada gambar yang berhasil diambil. Pastikan kamera berfungsi dengan baik.');
         setTimeout(() => setErrorMessage(null), 5000);
       }
@@ -506,99 +734,209 @@ export default function CameraPage() {
 
   const handleRetake = () => {
     setCapturedImage(null);
+    setCapturedBlob(null); // Clear the stored blob
     setShowCaptureResult(false);
+    console.log('🔄 Retaking photo...');
   };
 
   const handleCalibrate = async () => {
-    if (selectedCamera !== 'Camera Raspberry') {
-      console.warn('Calibration is available for Camera Raspberry only');
-      return;
-    }
-    
     try {
       setIsCalibrating(true);
+      setCalibrationResult(null);
+      setErrorMessage(null);
       
-      // Try to grab current frame from Raspberry camera
-      let imageDataUrl: string | null = null;
+      let imageBlob: Blob | null = null;
+      let calibrateUrl = '';
       
-      if (raspberryImgRef.current && canvasRef.current) {
-        const img = raspberryImgRef.current as HTMLImageElement;
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
+      if (selectedCamera === 'Camera Raspberry') {
+        // Kalibrasi untuk Raspberry Camera
+        calibrateUrl = RASPBERRY_CALIBRATE_URL;
         
-        if (context) {
-          const w = img.naturalWidth || img.width || 1280;
-          const h = img.naturalHeight || img.height || 720;
-          canvas.width = w;
-          canvas.height = h;
+        // Try to grab current frame from Raspberry camera
+        if (raspberryImgRef.current && canvasRef.current) {
+          const img = raspberryImgRef.current as HTMLImageElement;
+          const canvas = canvasRef.current;
+          const context = canvas.getContext('2d');
           
-          try {
-            context.drawImage(img, 0, 0, w, h);
-            imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-          } catch (e) {
-            console.warn('Calibrate drawImage failed (CORS likely), proceeding without image payload');
+          if (context) {
+            const w = img.naturalWidth || img.width || 1280;
+            const h = img.naturalHeight || img.height || 720;
+            canvas.width = w;
+            canvas.height = h;
+            
+            try {
+              context.drawImage(img, 0, 0, w, h);
+              const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+              const response = await fetch(imageDataUrl);
+              imageBlob = await response.blob();
+            } catch (e) {
+              console.warn('Calibrate drawImage failed (CORS likely), proceeding without image payload');
+            }
           }
         }
+      } else if (selectedCamera === 'Camera Handphone') {
+        // Kalibrasi untuk Camera Handphone - kirim ke API production
+        calibrateUrl = API_CALIBRATE_URL;
+        
+        // Capture current frame from video stream
+        if (videoRef.current && canvasRef.current) {
+          const video = videoRef.current;
+          const canvas = canvasRef.current;
+          const context = canvas.getContext('2d');
+          
+          if (context && video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw video frame to canvas (without mirroring for API)
+            context.save();
+            context.scale(1, 1); // Don't mirror for calibration
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            context.restore();
+            
+            // Convert to blob
+            imageBlob = await new Promise<Blob | null>((resolve) => {
+              canvas.toBlob(resolve, 'image/jpeg', 0.95);
+            });
+            
+            console.log('📸 Captured frame from handphone camera for calibration');
+          } else {
+            throw new Error('Video stream not ready. Please wait for camera to initialize.');
+          }
+        } else {
+          throw new Error('Camera not initialized. Please allow camera access.');
+        }
+      } else {
+        throw new Error('Please select a camera first.');
       }
 
       // Prepare request
-      const options: RequestInit = { 
-        method: 'POST', 
-        mode: 'cors',
-        headers: {
-          'accept': 'application/json',
-        }
-      };
+      const formData = new FormData();
       
-      if (imageDataUrl) {
-        // Convert data URL to blob and add to FormData
-        const response = await fetch(imageDataUrl);
-        const blob = await response.blob();
-        const formData = new FormData();
-        formData.append('file', blob, 'calibrate.jpg');
-        options.body = formData;
+      if (imageBlob) {
+        formData.append('image', imageBlob, `calibrate_${selectedCamera.toLowerCase().replace(' ', '_')}_${Date.now()}.jpg`);
+        console.log('📦 FormData prepared:', {
+          camera: selectedCamera,
+          imageSize: imageBlob.size,
+          imageType: imageBlob.type,
+          url: calibrateUrl
+        });
+      } else {
+        console.warn('⚠️ No image captured, sending empty request');
       }
       
-      const res = await fetch(RASPBERRY_CALIBRATE_URL, options);
+      console.log('🚀 Sending calibration request to:', calibrateUrl);
+      
+      const res = await fetch(calibrateUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'accept': 'application/json',
+        },
+        mode: 'cors',
+      });
+      
+      console.log('📡 Response status:', res.status, res.statusText);
       
       if (!res.ok) {
-        throw new Error(`Calibration failed: ${res.status} ${res.statusText}`);
+        const errorText = await res.text();
+        console.error('❌ Calibration failed:', errorText);
+        
+        // Parse error message if it's JSON
+        let errorMessage = `${res.status}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.message) {
+            errorMessage = errorJson.message;
+          } else if (errorJson.status === 'failed') {
+            errorMessage = errorJson.message || 'Calibration Failed. Marker not detected.';
+          }
+        } catch (e) {
+          // If not JSON, use the text response
+          errorMessage = errorText || res.statusText;
+        }
+        
+        throw new Error(`Calibration failed: ${errorMessage}`);
       }
       
       try {
         const result = await res.json();
-        console.log('Calibration successful:', result);
-      } catch {
-        console.log('Calibration successful (non-JSON response)');
+        console.log('✅ Calibration successful:', result);
+        setCalibrationResult(JSON.stringify(result, null, 2));
+        
+        // Show success message
+        alert(`Kalibrasi berhasil!\n\nCamera: ${selectedCamera}\nStatus: Success`);
+      } catch (parseError) {
+        console.log('✅ Calibration successful (non-JSON response)');
+        setCalibrationResult('Calibration completed successfully');
+        alert(`Kalibrasi berhasil!\n\nCamera: ${selectedCamera}`);
       }
       
     } catch (error) {
-      console.error('Calibration error:', error);
+      console.error('❌ Calibration error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      setErrorMessage(`❌ Kalibrasi gagal: ${errorMsg}`);
     } finally {
       setIsCalibrating(false);
     }
   };
 
-  const handleContinue = () => {
-    // Get the uploaded image name from session storage
-    const uploadedImageName = sessionStorage.getItem('uploadedImageName');
-    
-    console.log('Processing captured image:', capturedImage);
-    console.log('Uploaded image name:', uploadedImageName);
-    
-    // Get child ID from URL params
-    const childId = searchParams?.get('child');
-    const cameraType = searchParams?.get('camera');
-    
-    // Navigate to result page with captured image data and uploaded image name
-    const params = new URLSearchParams({
-      ...(childId && { child: childId }),
-      ...(cameraType && { camera: cameraType }),
-      ...(uploadedImageName && { image: uploadedImageName }),
-      timestamp: Date.now().toString()
-    });
-    
-    router.push(`/result?${params.toString()}`);
+  // handlePingTest function removed - functionality now integrated into testConnection()
+
+  const handleContinue = async () => {
+    try {
+      setIsUploading(true);
+      
+      // For Camera Handphone, upload the captured blob to Production API
+      if (selectedCamera === 'Camera Handphone' && capturedBlob) {
+        console.log('📤 Uploading captured image to Production API...');
+        
+        if (!childData) {
+          setErrorMessage('❌ Data anak tidak ditemukan. Silakan pilih anak terlebih dahulu.');
+          setTimeout(() => setErrorMessage(null), 5000);
+          return;
+        }
+        
+        const uploadedImageName = await uploadToProductionAPI(capturedBlob);
+        
+        if (uploadedImageName) {
+          // Store the uploaded image name
+          sessionStorage.setItem('uploadedImageName', uploadedImageName);
+          console.log('✅ Upload successful, image name:', uploadedImageName);
+        } else {
+          // Upload failed, error already handled in uploadToProductionAPI
+          console.error('❌ Upload failed, aborting navigation');
+          return;
+        }
+      }
+      
+      // Get the uploaded image name from session storage
+      const uploadedImageName = sessionStorage.getItem('uploadedImageName');
+      
+      console.log('Processing captured image:', capturedImage);
+      console.log('Uploaded image name:', uploadedImageName);
+      
+      // Get child ID from URL params
+      const childId = searchParams?.get('child');
+      const cameraType = searchParams?.get('camera');
+      
+      // Navigate to result page with captured image data and uploaded image name
+      const params = new URLSearchParams({
+        ...(childId && { child: childId }),
+        ...(cameraType && { camera: cameraType }),
+        ...(uploadedImageName && { image: uploadedImageName }),
+        timestamp: Date.now().toString()
+      });
+      
+      router.push(`/result?${params.toString()}`);
+      
+    } catch (error) {
+      console.error('❌ Continue process error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Gagal memproses gambar');
+      setTimeout(() => setErrorMessage(null), 5000);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleBack = () => {
@@ -606,98 +944,104 @@ export default function CameraPage() {
   };
 
   const testConnection = async () => {
-    console.log('🔍 Testing connection to API...');
     setIsTestingConnection(true);
+    setPingResult(null);
     setErrorMessage(null);
-    
+
     try {
-      // Test 1: Basic connection
-      const testUrl = RASPBERRY_CAPTURE_URL.replace('/capture', '/'); // Test root endpoint
-      console.log('🔗 Test 1: Testing basic connection to:', testUrl);
-      
-      const response = await fetch(testUrl, {
-        method: 'GET',
-        mode: 'cors',
-        headers: {
-          'accept': 'application/json',
-        },
-      });
-      
-      console.log('📡 Basic connection test response:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      });
-      
-      // Test 2: Check capture endpoint with OPTIONS (preflight)
-      console.log('🔗 Test 2: Testing capture endpoint OPTIONS...');
-      try {
-        const optionsResponse = await fetch(RASPBERRY_CAPTURE_URL, {
-          method: 'OPTIONS',
+      if (selectedCamera === 'Camera Handphone') {
+        // Ping test untuk Camera Handphone - ke Production API
+        // Validation: Ensure we're NOT using Raspberry URL
+        if (API_PING_URL.includes('10.13.0.22') || API_PING_URL.includes('localhost')) {
+          console.error('❌ ERROR: Ping URL incorrectly pointing to local/Raspberry endpoint!');
+          alert('Configuration Error: API URL should point to production, not local server!');
+          return;
+        }
+
+        console.log('� Testing connection to ComViT Production API...');
+        console.log('📡 Target: Production API (NOT Raspberry Pi)');
+        console.log('📡 Ping URL:', API_PING_URL);
+        console.log('📡 Expected: https://comvit-production.up.railway.app/ping');
+        console.log('✅ Validation: URL is correct (Production API)');
+
+        const startTime = performance.now();
+
+        const response = await fetch(API_PING_URL, {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+          },
           mode: 'cors',
         });
-        console.log('📡 OPTIONS response:', {
-          status: optionsResponse.status,
-          headers: Object.fromEntries(optionsResponse.headers.entries())
-        });
-      } catch (optError) {
-        console.warn('OPTIONS test failed:', optError);
-      }
-      
-      // Test 3: Try a minimal POST to see what server expects
-      console.log('🔗 Test 3: Testing minimal POST request...');
-      try {
-        const minimalCanvas = document.createElement('canvas');
-        minimalCanvas.width = 10;
-        minimalCanvas.height = 10;
-        const minimalCtx = minimalCanvas.getContext('2d');
-        if (minimalCtx) {
-          minimalCtx.fillStyle = 'red';
-          minimalCtx.fillRect(0, 0, 10, 10);
-          
-          const minimalBlob = await new Promise<Blob | null>((resolve) => {
-            minimalCanvas.toBlob(resolve, 'image/png');
-          });
-          
-          if (minimalBlob) {
-            const testFormData = new FormData();
-            testFormData.append('image', minimalBlob, 'test.png');
-            
-            const testPostResponse = await fetch(RASPBERRY_CAPTURE_URL, {
-              method: 'POST',
-              body: testFormData,
-              mode: 'cors',
-            });
-            
-            const testResponseText = await testPostResponse.text();
-            console.log('📡 Minimal POST response:', {
-              status: testPostResponse.status,
-              statusText: testPostResponse.statusText,
-              text: testResponseText
-            });
-            
-            try {
-              const testJson = JSON.parse(testResponseText);
-              console.log('📥 Minimal POST JSON:', testJson);
-            } catch {
-              console.log('📄 Response is not JSON');
-            }
-          }
+
+        const endTime = performance.now();
+        const responseTime = Math.round(endTime - startTime);
+
+        console.log('📡 Response status:', response.status, response.statusText);
+        console.log('⏱️ Response time:', responseTime, 'ms');
+
+        if (!response.ok) {
+          throw new Error(`Ping failed: ${response.status} ${response.statusText}`);
         }
-      } catch (postError) {
-        console.warn('Minimal POST test failed:', postError);
-      }
-      
-      if (response.ok) {
-        setErrorMessage('✅ Koneksi ke server berhasil! Cek console untuk detail lengkap.');
-        setTimeout(() => setErrorMessage(null), 5000);
+
+        let result;
+        try {
+          result = await response.json();
+          console.log('✅ Ping response:', result);
+        } catch (parseError) {
+          // If response is not JSON, treat as success with text response
+          const textResponse = await response.text();
+          result = { message: textResponse };
+          console.log('✅ Ping response (text):', textResponse);
+        }
+
+        setPingResult({
+          status: 'success',
+          message: typeof result === 'string' ? result : (result.message || 'API is online'),
+          responseTime: responseTime
+        });
+
       } else {
-        setErrorMessage(`❌ Server merespons dengan error: ${response.status}`);
+        // Test connection untuk Camera Raspberry
+        console.log('🔍 Testing connection to Raspberry Pi...');
+        const testUrl = RASPBERRY_CAPTURE_URL.replace('/capture', '/');
+        console.log('🔗 Testing basic connection to:', testUrl);
+        
+        const response = await fetch(testUrl, {
+          method: 'GET',
+          mode: 'cors',
+          headers: {
+            'accept': 'application/json',
+          },
+        });
+        
+        console.log('📡 Raspberry connection test response:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok
+        });
+        
+        if (response.ok) {
+          setErrorMessage('✅ Koneksi ke Raspberry Pi berhasil!');
+          setTimeout(() => setErrorMessage(null), 5000);
+        } else {
+          setErrorMessage(`❌ Raspberry Pi merespons dengan error: ${response.status}`);
+        }
       }
       
     } catch (error) {
-      console.error('Connection test failed:', error);
-      setErrorMessage('❌ Tidak dapat terhubung ke server. Periksa jaringan atau server Raspberry Pi.');
+      console.error('❌ Connection test error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      if (selectedCamera === 'Camera Handphone') {
+        setPingResult({
+          status: 'error',
+          message: errorMsg
+        });
+        setErrorMessage(`❌ Ping test gagal: ${errorMsg}`);
+      } else {
+        setErrorMessage('❌ Tidak dapat terhubung ke Raspberry Pi. Periksa jaringan atau server.');
+      }
     } finally {
       setIsTestingConnection(false);
     }
@@ -718,6 +1062,15 @@ export default function CameraPage() {
 
           {/* Camera Selector Dropdown */}
           <div className="relative flex items-center gap-2">
+            {/* Child Info Badge - Show loaded child data */}
+            {childData && (
+              <div className="bg-green-500/90 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-xs shadow-lg flex items-center gap-2">
+                <span>👶 {childData.name}</span>
+                <span className="opacity-75">|</span>
+                <span>{childData.gender === 'male' ? '♂️' : '♀️'} {childData.age} bulan</span>
+              </div>
+            )}
+            
             {/* Test Connection Button */}
             <button
               onClick={testConnection}
@@ -769,12 +1122,7 @@ export default function CameraPage() {
         {/* Error Message */}
         {errorMessage && (
           <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 max-w-md w-full mx-4">
-            <div className="bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
-              <div className="flex-shrink-0">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
+            <div className="bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center justify-between gap-3">
               <div className="flex-1">
                 <p className="text-sm font-medium">{errorMessage}</p>
               </div>
@@ -869,7 +1217,48 @@ export default function CameraPage() {
                 {isUploading && (
                   <span className="text-xs ml-2 bg-blue-500 px-2 py-1 rounded">Uploading...</span>
                 )}
+                {isCalibrating && (
+                  <span className="text-xs ml-2 bg-yellow-500 px-2 py-1 rounded">Calibrating...</span>
+                )}
               </div>
+
+              {/* Calibration Success Message */}
+              {calibrationResult && !errorMessage && (
+                <div className="absolute top-20 left-1/2 -translate-x-1/2 max-w-md bg-green-500 text-white px-4 py-3 rounded-lg shadow-xl z-20">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">✅ Kalibrasi Berhasil!</p>
+                    </div>
+                    <button 
+                      onClick={() => setCalibrationResult(null)}
+                      className="text-white hover:text-gray-200"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Ping Test Success Message */}
+              {pingResult && pingResult.status === 'success' && !errorMessage && (
+                <div className="absolute top-20 left-1/2 -translate-x-1/2 max-w-md bg-green-500 text-white px-4 py-3 rounded-lg shadow-xl z-20">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">✅ Koneksi API Berhasil! Response time: {pingResult.responseTime}ms</p>
+                    </div>
+                    <button 
+                      onClick={() => setPingResult(null)}
+                      className="text-white hover:text-gray-200"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Instruction and Controls - Center Bottom */}
               {!showCaptureResult ? (
@@ -896,10 +1285,11 @@ export default function CameraPage() {
                     </button>
                     <button
                       onClick={handleCalibrate}
-                      disabled={isCalibrating || selectedCamera !== 'Camera Raspberry'}
+                      disabled={isCalibrating}
                       className={`rounded-full px-4 py-2 shadow-xl border transition-colors duration-200 ${
                         isCalibrating ? 'bg-gray-200 border-gray-300 text-gray-500' : 'bg-white border-[#407A81] text-[#407A81] hover:bg-[#E7F5F7]'
                       }`}
+                      title={`Kalibrasi ${selectedCamera}`}
                     >
                       {isCalibrating ? 'Calibrating…' : 'Calibrate'}
                     </button>
@@ -910,7 +1300,10 @@ export default function CameraPage() {
                   {/* Retake Button */}
                   <button
                     onClick={handleRetake}
-                    className="bg-white hover:bg-gray-100 text-[#407A81] rounded-full p-4 shadow-xl transition-all duration-200 hover:scale-105 border border-gray-200"
+                    disabled={isUploading}
+                    className={`bg-white hover:bg-gray-100 text-[#407A81] rounded-full p-4 shadow-xl transition-all duration-200 border border-gray-200 ${
+                      isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'
+                    }`}
                   >
                     <LuUndo2 className="w-6 h-6" />
                   </button>
@@ -918,10 +1311,24 @@ export default function CameraPage() {
                   {/* Continue Button */}
                   <button
                     onClick={handleContinue}
-                    className="bg-[#407A81] hover:bg-[#326269] text-white rounded-full p-4 shadow-xl transition-all duration-200 hover:scale-105"
+                    disabled={isUploading}
+                    className={`bg-[#407A81] hover:bg-[#326269] text-white rounded-full p-4 shadow-xl transition-all duration-200 relative ${
+                      isUploading ? 'opacity-75 cursor-wait' : 'hover:scale-105'
+                    }`}
                   >
-                    <FiArrowRightCircle className="w-6 h-6" />
+                    {isUploading ? (
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <FiArrowRightCircle className="w-6 h-6" />
+                    )}
                   </button>
+                  
+                  {/* Upload Status Text */}
+                  {isUploading && (
+                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded text-xs whitespace-nowrap">
+                      Mengupload ke server...
+                    </div>
+                  )}
                 </div>
               )}
             </div>
