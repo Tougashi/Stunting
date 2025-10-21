@@ -47,7 +47,7 @@ function TambahAnakFormContent() {
     }
     
     const years = Math.floor(months / 12);
-    const remainingMonths = months % 12;
+    // const remainingMonths = months % 12;
     
     return { months: months < 0 ? 0 : months, years };
   };
@@ -103,23 +103,23 @@ function TambahAnakFormContent() {
     }));
   };
 
-  // Separate handler for age input to prevent conflicts
-  const handleAgeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    console.log('🔢 Age input changed to:', value, 'isManualAge:', isManualAge);
+  // // Separate handler for age input to prevent conflicts
+  // const handleAgeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const value = e.target.value;
+  //   console.log('🔢 Age input changed to:', value, 'isManualAge:', isManualAge);
     
-    // Only set manual mode if user actually types (not from auto-calculation)
-    if (!isManualAge) {
-      console.log('⚠️ Age changed but not setting manual mode (auto-calculation)');
-    } else {
-      console.log('✋ User manually changing age');
-    }
+  //   // Only set manual mode if user actually types (not from auto-calculation)
+  //   if (!isManualAge) {
+  //     console.log('⚠️ Age changed but not setting manual mode (auto-calculation)');
+  //   } else {
+  //     console.log('✋ User manually changing age');
+  //   }
     
-    setFormData(prev => ({
-      ...prev,
-      currentAge: value
-    }));
-  };
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     currentAge: value
+  //   }));
+  // };
 
   const handleGenderSelect = (gender: string) => {
     setFormData(prev => ({

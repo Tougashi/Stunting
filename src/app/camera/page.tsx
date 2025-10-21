@@ -14,6 +14,7 @@ function CameraPageContent() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [showCaptureResult, setShowCaptureResult] = useState(false);
+  const [isInitializingCamera, setIsInitializingCamera] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const raspberryImgRef = useRef<HTMLImageElement>(null);
@@ -153,21 +154,34 @@ function CameraPageContent() {
 
   // Initialize camera (only for Handphone - local device camera)
   useEffect(() => {
-    if (selectedCamera === 'Camera Handphone') {
-      initializeCamera();
-    } else {
-      // stop any existing local streams when switching to Raspberry
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach((t) => t.stop());
-        videoRef.current.srcObject = null;
+    const setupCamera = async () => {
+      if (selectedCamera === 'Camera Handphone') {
+        await initializeCamera();
+      } else {
+        // stop any existing local streams when switching to Raspberry
+        if (videoRef.current && videoRef.current.srcObject) {
+          const stream = videoRef.current.srcObject as MediaStream;
+          stream.getTracks().forEach((t) => t.stop());
+          videoRef.current.srcObject = null;
+        }
       }
-    }
+    };
+    
+    setupCamera();
   }, [selectedCamera]);
 
   const initializeCamera = async () => {
+    setIsInitializingCamera(true);
     try {
       if (videoRef.current) {
+        // Stop any existing stream first
+        if (videoRef.current.srcObject) {
+          const existingStream = videoRef.current.srcObject as MediaStream;
+          existingStream.getTracks().forEach((track) => track.stop());
+          videoRef.current.srcObject = null;
+        }
+        
+        console.log('📱 Initializing camera...');
         const stream = await navigator.mediaDevices.getUserMedia({ 
           video: { 
             width: 1280, 
@@ -177,9 +191,22 @@ function CameraPageContent() {
           } 
         });
         videoRef.current.srcObject = stream;
+        
+        // Wait for video to be ready
+        await new Promise<void>((resolve) => {
+          if (videoRef.current) {
+            videoRef.current.onloadedmetadata = () => {
+              console.log('✅ Camera stream loaded');
+              resolve();
+            };
+          }
+        });
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
+      setErrorMessage('Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan.');
+    } finally {
+      setIsInitializingCamera(false);
     }
   };
 
@@ -602,6 +629,14 @@ function CameraPageContent() {
         console.log('🖼️ Setting captured image for preview...');
         setCapturedImage(capturedDataUrl);
         setShowCaptureResult(true);
+        
+        // Stop camera stream untuk Camera Handphone saat preview ditampilkan
+        if (selectedCamera === 'Camera Handphone' && videoRef.current && videoRef.current.srcObject) {
+          const stream = videoRef.current.srcObject as MediaStream;
+          stream.getTracks().forEach((track) => track.stop());
+          videoRef.current.srcObject = null;
+        }
+        
         console.log('✅ Image captured successfully');
       } else {
         console.error('❌ No image data captured');
@@ -621,11 +656,38 @@ function CameraPageContent() {
     }
   };
 
-  const handleRetake = () => {
+  const handleRetake = async () => {
+    console.log('🔄 Starting retake process...');
+    
+    // Reset states immediately
     setCapturedImage(null);
-    setCapturedBlob(null); // Clear the stored blob
+    setCapturedBlob(null);
     setShowCaptureResult(false);
-    console.log('🔄 Retaking photo...');
+    setErrorMessage(null);
+    
+    // Give UI time to update
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Restart camera stream untuk Camera Handphone
+    if (selectedCamera === 'Camera Handphone') {
+      try {
+        console.log('🔄 Restarting camera after retake...');
+        setIsInitializingCamera(true);
+        
+        // Small delay to ensure state is properly reset
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        await initializeCamera();
+        console.log('✅ Camera restarted successfully');
+      } catch (error) {
+        console.error('❌ Failed to restart camera:', error);
+        setErrorMessage('Gagal menginisialisasi ulang kamera. Silakan refresh halaman.');
+      } finally {
+        setIsInitializingCamera(false);
+      }
+    }
+    
+    console.log('🏁 Retake process completed');
   };
 
   const handleCalibrate = async () => {
@@ -1027,13 +1089,23 @@ function CameraPageContent() {
             <div className="relative bg-white rounded-2xl overflow-hidden shadow-2xl">
             {!showCaptureResult ? (
               selectedCamera === 'Camera Handphone' ? (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className={getVideoPreviewClass()}
-                />
+                <div className="relative">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className={getVideoPreviewClass()}
+                  />
+                  {isInitializingCamera && (
+                    <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#407A81] mx-auto mb-4"></div>
+                        <p className="text-gray-600">Menginisialisasi kamera...</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <img
                   ref={raspberryImgRef}

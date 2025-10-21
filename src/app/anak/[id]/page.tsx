@@ -83,65 +83,6 @@ interface ScanHistoryRecord {
   timeAgo: string;
 }
 
-// Dummy scan history data
-const scanHistoryData: { [key: string]: ScanHistoryRecord[] } = {
-  '1': [
-    {
-      id: 'scan-1',
-      childId: '1',
-      age: 2,
-      height: 28.5,
-      weight: 1.2,
-      status: 'normal',
-      date: '2024-08-20',
-      timeAgo: '2 Jam yang lalu'
-    },
-    {
-      id: 'scan-2',
-      childId: '1',
-      age: 2,
-      height: 28.5,
-      weight: 1.2,
-      status: 'normal',
-      date: '2024-08-19',
-      timeAgo: '2 Jam yang lalu'
-    },
-    {
-      id: 'scan-3',
-      childId: '1',
-      age: 2,
-      height: 28.5,
-      weight: 1.2,
-      status: 'normal',
-      date: '2024-08-18',
-      timeAgo: '2 Jam yang lalu'
-    }
-  ],
-  '2': [
-    {
-      id: 'scan-4',
-      childId: '2',
-      age: 3,
-      height: 30,
-      weight: 1.5,
-      status: 'stunted',
-      date: '2024-08-20',
-      timeAgo: '3 Jam yang lalu'
-    }
-  ],
-  '3': [
-    {
-      id: 'scan-5',
-      childId: '3',
-      age: 1,
-      height: 25,
-      weight: 1.0,
-      status: 'severely stunted',
-      date: '2024-08-20',
-      timeAgo: '1 Jam yang lalu'
-    }
-  ]
-};
 
 export default function ProfileAnakPage() {
   const router = useRouter();

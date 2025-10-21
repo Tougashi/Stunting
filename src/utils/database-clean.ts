@@ -1432,24 +1432,24 @@ export const getAnalysisSummary = async () => {
   try {
     console.log('🔄 Fetching analysis summary...');
     
-    // Get count of each status
+    // Get count of each status from TempAnalisis (sama seperti history data)
     const { data: normalCount, error: normalError } = await supabase
-      .from('Analisis')
+      .from('TempAnalisis')
       .select('id', { count: 'exact' })
       .eq('status', 'normal');
       
     const { data: tallCount, error: tallError } = await supabase
-      .from('Analisis')
+      .from('TempAnalisis')
       .select('id', { count: 'exact' })
       .eq('status', 'tall');
       
     const { data: stuntedCount, error: stuntedError } = await supabase
-      .from('Analisis')
+      .from('TempAnalisis')
       .select('id', { count: 'exact' })
       .eq('status', 'stunted');
       
     const { data: severelyStuntedCount, error: severelyStuntedError } = await supabase
-      .from('Analisis')
+      .from('TempAnalisis')
       .select('id', { count: 'exact' })
       .eq('status', 'severely stunted');
       
