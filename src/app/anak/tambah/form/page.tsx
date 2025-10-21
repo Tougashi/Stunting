@@ -198,9 +198,9 @@ function TambahAnakFormContent() {
       console.log('Child data saved successfully');
       router.push('/anak');
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving child data:', error);
-      setSubmitError(error.message || 'Gagal menyimpan data anak');
+      setSubmitError(error instanceof Error ? error.message : 'Gagal menyimpan data anak');
     } finally {
       setIsSubmitting(false);
     }

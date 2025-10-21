@@ -96,9 +96,9 @@ export default function TambahOrangTuaPage() {
       console.log('Parent data saved successfully');
       router.push('/orang-tua');
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving parent data:', error);
-      setSubmitError(error.message || 'Gagal menyimpan data orang tua');
+      setSubmitError(error instanceof Error ? error.message : 'Gagal menyimpan data orang tua');
     } finally {
       setIsSubmitting(false);
     }

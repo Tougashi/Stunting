@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components';
-import { FiArrowLeft, FiCalendar } from 'react-icons/fi';
+import { FiArrowLeft } from 'react-icons/fi';
 import { useRouter, useParams } from 'next/navigation';
-import Image from 'next/image';
-import { fetchChildByNik, updateChildData, uploadChildImage, deleteChildImage, UpdateChildData } from '@/utils/database-clean';
+import { fetchChildByNik, updateChildData, uploadChildImage, deleteChildImage, UpdateChildData, ChildData } from '@/utils/database-clean';
 
 // Helper function to calculate age from birth date
 const calculateAgeFromBirthDate = (birthDate: string) => {
@@ -34,7 +33,7 @@ export default function EditChildPage() {
   const nik = params?.id as string; // URL parameter adalah NIK anak
   
   // State for child data and loading
-  const [childData, setChildData] = useState<any>(null);
+  const [childData, setChildData] = useState<ChildData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -232,9 +231,9 @@ export default function EditChildPage() {
       console.log('Child data updated successfully');
       router.push('/anak');
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating child data:', error);
-      setSubmitError(error.message || 'Gagal mengupdate data anak');
+      setSubmitError(error instanceof Error ? error.message : 'Gagal mengupdate data anak');
     } finally {
       setIsSubmitting(false);
     }

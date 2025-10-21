@@ -143,31 +143,6 @@ const scanHistoryData: { [key: string]: ScanHistoryRecord[] } = {
   ]
 };
 
-const getChildScanHistory = (childId: string): ScanHistoryRecord[] => {
-  const existing = scanHistoryData[childId] || [];
-  if (existing.length >= 3) return existing;
-  const padded: ScanHistoryRecord[] = [...existing];
-  const seed: ScanHistoryRecord = existing[0] || {
-    id: `scan-${childId}-seed`,
-    childId,
-    age: 2,
-    height: 28,
-    weight: 1.2,
-    status: 'normal',
-    date: '2024-08-20',
-    timeAgo: '2 Jam yang lalu',
-  };
-  while (padded.length < 3) {
-    const n = padded.length + 1;
-    padded.push({
-      ...seed,
-      id: `scan-${childId}-${n}`,
-      timeAgo: `${n} Jam yang lalu`,
-    });
-  }
-  return padded;
-};
-
 export default function ProfileAnakPage() {
   const router = useRouter();
   const params = useParams();
@@ -193,8 +168,20 @@ export default function ProfileAnakPage() {
           // Convert database data to component interface
           const dataWithAddress = data as { 
             child: ChildData | null; 
-            father: any; 
-            mother: any; 
+            father: {
+              nama?: string;
+              tempat_lahir?: string;
+              tanggal_lahir?: string;
+              no_hp?: string;
+              nik?: string;
+            } | null; 
+            mother: {
+              nama?: string;
+              tempat_lahir?: string;
+              tanggal_lahir?: string;
+              no_hp?: string;
+              nik?: string;
+            } | null; 
             address: AddressData | null;
             analysisHistory: AnalysisData[]
           };

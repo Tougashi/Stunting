@@ -5,7 +5,7 @@ import { Layout } from '@/components';
 import { FiArrowLeft, FiTrash2, FiHelpCircle } from 'react-icons/fi';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
-import { fetchAnalysisDetail, deleteAnalysis, AnalysisData, ChildData } from '@/utils/database-clean';
+import { fetchAnalysisDetail, deleteAnalysis } from '@/utils/database-clean';
 
 // Interface for scan record
 interface ScanRecord {
@@ -56,22 +56,6 @@ const translateStatus = (status: string): string => {
       return 'Stunting Parah';
     default:
       return status;
-  }
-};
-
-// Function to get status colors (same as in database-clean.ts)
-const getStatusColors = (status: string) => {
-  switch (status) {
-    case 'normal':
-      return { bg: 'bg-[#E8F5E9]', text: 'text-[#4CAF50]', bgHex: '#E8F5E9', textHex: '#4CAF50' };
-    case 'tall':
-      return { bg: 'bg-[#E3F2FD]', text: 'text-[#2196F3]', bgHex: '#E3F2FD', textHex: '#2196F3' };
-    case 'stunted':
-      return { bg: 'bg-[#FFF9E6]', text: 'text-[#FFA726]', bgHex: '#FFF9E6', textHex: '#FFA726' };
-    case 'severely stunted':
-      return { bg: 'bg-[#FFEBEE]', text: 'text-[#EF5350]', bgHex: '#FFEBEE', textHex: '#EF5350' };
-    default:
-      return { bg: 'bg-gray-100', text: 'text-gray-600', bgHex: '#F3F4F6', textHex: '#4B5563' };
   }
 };
 

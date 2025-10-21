@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components';
 import Link from 'next/link';
 import { FiMoreVertical, FiArrowLeft } from 'react-icons/fi';
@@ -26,6 +26,7 @@ export default function OrangTuaDetailPage() {
   const params = useParams();
   const parentId = params?.id as string;
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -77,6 +78,7 @@ export default function OrangTuaDetailPage() {
             kodePos: parentDetail.address?.kode_pos || '',
             detail: parentDetail.address?.jalan || '',
           },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           children: parentDetail.children.map((child: any) => ({
             id: child.nik,
             name: child.nama,
@@ -241,6 +243,7 @@ export default function OrangTuaDetailPage() {
               </div>
               <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-3 gap-6">
                 {data?.children && data.children.length > 0 ? (
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   data.children.map((c: any) => (
                   <div
                     key={c.id}

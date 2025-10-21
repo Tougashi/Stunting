@@ -59,7 +59,9 @@ function ResultPageContent() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [childData, setChildData] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -124,6 +126,7 @@ function ResultPageContent() {
           const storedChildren = sessionStorage.getItem('children');
           if (storedChildren) {
             const children = JSON.parse(storedChildren);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             child = children.find((c: any) => c.id === childId);
           }
         }

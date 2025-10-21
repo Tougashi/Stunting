@@ -31,7 +31,6 @@ export default function HistoryDetailPage() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [record, setRecord] = useState<TempAnalysisDetail | null>(null);
-  const [childData, setChildData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -79,7 +78,6 @@ export default function HistoryDetailPage() {
         };
         
         setRecord(transformedRecord);
-        setChildData(child);
         
         // Check if already saved to Analisis
         const savedStatus = await checkIfSavedToAnalysis(id);

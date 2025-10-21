@@ -420,8 +420,20 @@ export const fetchChildrenData = async (): Promise<ChildData[]> => {
 
 export const fetchChildDetailWithParents = async (childNik: string): Promise<{
   child: ChildData | null;
-  father: any | null;
-  mother: any | null;
+  father: {
+    nama?: string;
+    tempat_lahir?: string;
+    tanggal_lahir?: string;
+    no_hp?: string;
+    nik?: string;
+  } | null;
+  mother: {
+    nama?: string;
+    tempat_lahir?: string;
+    tanggal_lahir?: string;
+    no_hp?: string;
+    nik?: string;
+  } | null;
 }> => {
   try {
     console.log('🔄 Fetching child detail for NIK:', childNik);
@@ -1050,6 +1062,7 @@ export const insertParentData = async (parentData: NewParentData, fatherImageFil
 };
 
 // Update parent data
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const updateParentData = async (no_kk: string, parentData: any, fatherImageFile?: File, motherImageFile?: File) => {
   console.log('🔄 Starting parent data update process for No KK:', no_kk);
   
@@ -1589,12 +1602,12 @@ export const fetchTempAnalysisHistory = async (): Promise<HistoryData[]> => {
     }
     
     // Transform data to HistoryData format
-    const historyData: HistoryData[] = tempAnalysisData.map((record: any) => {
+    const historyData: HistoryData[] = tempAnalysisData.map((record: TempAnalysisData) => {
       const child = childMap.get(record.nik);
       
       return {
-        id: record.id,
-        analysisId: record.id, // Use TempAnalysis ID
+        id: record.id || `temp-${Date.now()}`,
+        analysisId: record.id || `temp-${Date.now()}`, // Use TempAnalysis ID
         name: child?.nama || 'Unknown',
         nik: record.nik,
         age_years: child?.umur_tahun || 0,
@@ -1603,7 +1616,7 @@ export const fetchTempAnalysisHistory = async (): Promise<HistoryData[]> => {
         height: record.tinggi,
         weight: record.berat,
         status: record.status,
-        date: record.created_at, // Gunakan created_at saja
+        date: record.created_at || new Date().toISOString(), // Gunakan created_at saja
         imageUrl: record.image
       };
     });
