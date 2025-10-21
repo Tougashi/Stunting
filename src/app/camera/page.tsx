@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Layout } from '@/components';
 import { FiChevronDown, FiCamera, FiArrowLeft, FiArrowRightCircle } from 'react-icons/fi';
 import { LuUndo2 } from 'react-icons/lu';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function CameraPage() {
+function CameraPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedCamera, setSelectedCamera] = useState<'Camera Raspberry' | 'Camera Handphone'>('Camera Raspberry');
@@ -1217,5 +1217,30 @@ export default function CameraPage() {
         <canvas ref={canvasRef} className="hidden" />
       </div>
     </Layout>
+  );
+}
+
+function CameraPageLoading() {
+  return (
+    <Layout>
+      <div className="min-h-screen bg-[#F8FBFC] py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#407A81] mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading camera...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+}
+
+export default function CameraPage() {
+  return (
+    <Suspense fallback={<CameraPageLoading />}>
+      <CameraPageContent />
+    </Suspense>
   );
 }
