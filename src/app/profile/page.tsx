@@ -1,9 +1,43 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import ProfileImageUpload from '@/components/ui/ProfileImageUpload';
 
 export default function ProfilePage() {
+  const { user, loading, signOut } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  const handleLogout = () => {
+    signOut();
+    router.push('/');
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#407A81] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <Layout>
       <main className="relative">
@@ -36,30 +70,19 @@ export default function ProfilePage() {
                 
                 {/* Profile Section */}
                 <div className="text-center mb-12">
-                  {/* Profile Image */}
+                  {/* Profile Image Upload */}
                   <div className="mb-8">
-                    <div className="w-32 h-32 mx-auto rounded-full overflow-hidden bg-gray-200">
-                      <img 
-                        src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80" 
-                        alt="Dr. Sarah Johnson"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const fallback = target.parentElement?.querySelector('.fallback-avatar') as HTMLElement;
-                          if (fallback) fallback.classList.remove('hidden');
-                        }}
-                      />
-                      <div className="fallback-avatar w-full h-full bg-teal-100 hidden items-center justify-center">
-                        <svg className="w-16 h-16 text-teal-600" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                      </div>
-                    </div>
+                    <ProfileImageUpload currentImageUrl={user.profile_image} />
                   </div>
                   
                   {/* Name */}
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-12">Dr. Sarah Johnson</h2>
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                    {user.name || user.username || 'User'}
+                  </h2>
+                  <p className="text-gray-600 mb-2">{user.email}</p>
+                  {user.no_hp && (
+                    <p className="text-gray-600 mb-12">{user.no_hp}</p>
+                  )}
                 </div>
                 
                 {/* Menu Items */}
@@ -82,17 +105,21 @@ export default function ProfilePage() {
                   </div>
                   
                   {/* Logout Account */}
-                  <div className="bg-white rounded-2xl p-6 profile-card-shadow hover:bg-gray-50 transition-colors cursor-pointer" style={{ height: '68px' }}>
+                  <div 
+                    className="bg-white rounded-2xl p-6 profile-card-shadow hover:bg-gray-50 transition-colors cursor-pointer" 
+                    style={{ height: '68px' }}
+                    onClick={handleLogout}
+                  >
                     <div className="flex items-center justify-between h-full">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
-                          <svg className="w-6 h-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                          <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                           </svg>
                         </div>
                         <span className="text-gray-900 font-medium text-lg">Logout Account</span>
                       </div>
-                      <svg className="w-6 h-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
