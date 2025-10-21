@@ -1,37 +1,249 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Layout } from '@/components';
-import { FiArrowLeft, FiTrash2 } from 'react-icons/fi';
-import { useRouter } from 'next/navigation';
+import { FiArrowLeft, FiTrash2, FiCheck } from 'react-icons/fi';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { fetchChildByNik, translateStatus, getStatusColors, insertTempAnalisis, saveToAnalisisNew } from '@/utils/database-clean';
+import { getTempImageUrl } from '@/utils/storage';
 
-export default function ResultPage() {
+// Helper function to parse timestamp from structured image path
+const parseImageTimestamp = (imagePath: string): Date => {
+  try {
+    // Expected format: childNik/2025-10-22T14-30-15/capture.jpg
+    const parts = imagePath.split('/');
+    if (parts.length >= 2) {
+      const timestampPart = parts[1];
+      // Convert back from our format: 2025-10-22T14-30-15 to ISO format
+      const isoTimestamp = timestampPart.replace(/-(\d{2})-(\d{2})$/, ':$1:$2');
+      return new Date(isoTimestamp + 'Z'); // Add Z for UTC
+    }
+  } catch (error) {
+    console.warn('Failed to parse timestamp from image path:', imagePath, error);
+  }
+  return new Date(); // Fallback to current time
+};
+
+const copyImageToPemindaian = async (imageUrl: string, nik: string): Promise<string> => {
+  try {
+    // Create timestamp folder structure
+    const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+    const newPath = `pemindaian/${nik}/${timestamp}/result.jpg`;
+    
+    // Call API to copy image
+    const response = await fetch('/api/storage/copy-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sourceUrl: imageUrl,
+        destinationPath: newPath,
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to copy image');
+    }
+    
+    const result = await response.json();
+    return result.publicUrl;
+  } catch (error) {
+    console.error('Error copying image:', error);
+    throw error;
+  }
+};
+
+function ResultPageContent() {
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [childData, setChildData] = useState<any>(null);
+  const [analysisData, setAnalysisData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Mock data - in real app this would come from props or API
-  const childData = {
-    name: 'Emma Jhon',
-    nik: '029102910920192',
-    age: '2 Tahun 2 Bulan',
-    gender: 'Laki Laki',
-    scanDate: '02 September 2025',
-    scanTime: '10:05 WIB',
-    height: '28,5 cm',
-    weight: '1,2 kg',
-    status: 'Pertumbuhan Anak Sehat',
-    statusColor: 'green'
+  // Load child data and analysis results from URL params
+  useEffect(() => {
+    const loadResultData = async () => {
+      try {
+        setLoading(true);
+        
+        // Get parameters from URL
+        const childId = searchParams?.get('child');
+        const cameraType = searchParams?.get('camera');
+        const imageId = searchParams?.get('image');
+        const timestamp = searchParams?.get('timestamp');
+        const imageUrl = searchParams?.get('imageUrl'); // Parameter gambar dari ComViT API
+        
+        console.log('Result page parameters:', { childId, cameraType, imageId, timestamp, imageUrl });
+        
+        if (!childId) {
+          throw new Error('ID anak tidak ditemukan');
+        }
+
+        // Parse the structured image path to get timestamp for display
+        const scanDateTime = imageId ? parseImageTimestamp(imageId) : new Date();
+        
+        // For now, we'll use mock analysis data since the real analysis isn't implemented yet
+        // In production, you would fetch this from your analysis API
+        const mockAnalysisResults = {
+          height: Math.floor(Math.random() * 30) + 60, // 60-90 cm
+          weight: (Math.random() * 8 + 8).toFixed(1), // 8-16 kg
+          status: ['normal', 'tall', 'stunted', 'severely stunted'][Math.floor(Math.random() * 4)],
+          confidence: (Math.random() * 30 + 70).toFixed(1), // 70-100%
+          scanDate: scanDateTime.toLocaleDateString('id-ID', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          }),
+          scanTime: scanDateTime.toLocaleTimeString('id-ID', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            timeZone: 'Asia/Jakarta'
+          }) + ' WIB',
+          imageUrl: imageUrl || (imageId ? getTempImageUrl(imageId) : '/image/icon/pengukuran-anak.jpg') // Prioritas: URL dari ComViT, fallback ke storage, fallback ke default
+        };
+
+        console.log('🖼️ Image URL being used:', mockAnalysisResults.imageUrl);
+        console.log('🔗 Direct ComViT URL:', imageUrl);
+        console.log('📁 Storage URL fallback:', imageId ? getTempImageUrl(imageId) : 'none');
+
+        // Load child data from database
+        let child = null;
+        try {
+          child = await fetchChildByNik(childId);
+        } catch (dbError) {
+          console.warn('Failed to load from database, using fallback:', dbError);
+          
+          // Fallback: try to get from session storage or use dummy data
+          const storedChildren = sessionStorage.getItem('children');
+          if (storedChildren) {
+            const children = JSON.parse(storedChildren);
+            child = children.find((c: any) => c.id === childId);
+          }
+        }
+
+        if (!child) {
+          // Ultimate fallback with dummy data
+          child = {
+            nama: 'Anak Test',
+            nik: childId,
+            gender: 'male',
+            umur_tahun: 2,
+            umur_bulan: 3,
+            tempat_lahir: 'Jakarta',
+            tanggal_lahir: '2022-08-15'
+          };
+        }
+
+        setChildData(child);
+        setAnalysisData(mockAnalysisResults);
+        
+        // Auto-insert ke TempAnalisis saat masuk result page
+        try {
+          const tempAnalysisData = {
+            nik: child.nik,
+            tinggi: mockAnalysisResults.height,
+            berat: parseFloat(mockAnalysisResults.weight),
+            status: mockAnalysisResults.status as 'severely stunted' | 'stunted' | 'tall' | 'normal',
+            image: mockAnalysisResults.imageUrl
+          };
+          
+          console.log('📝 Auto-inserting to TempAnalisis (no tanggal_pemeriksaan):', tempAnalysisData);
+          await insertTempAnalisis(tempAnalysisData);
+          console.log('✅ TempAnalisis inserted successfully');
+        } catch (tempError) {
+          console.warn('⚠️ Failed to insert TempAnalisis (will continue):', tempError);
+          // Don't block the UI if TempAnalisis insert fails
+        }
+        
+      } catch (err) {
+        console.error('Error loading result data:', err);
+        setError(err instanceof Error ? err.message : 'Gagal memuat data hasil');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadResultData();
+  }, [searchParams]);
+
+  // Helper function to format age display
+  const formatAge = (years: number, months: number): string => {
+    if (years === 0 && months === 0) {
+      return 'Baru lahir';
+    } else if (years === 0) {
+      return `${months} Bulan`;
+    } else if (months === 0) {
+      return `${years} Tahun`;
+    } else {
+      return `${years} Tahun ${months} Bulan`;
+    }
+  };
+
+  // Helper function to format gender display
+  const formatGender = (gender: string): string => {
+    if (gender === 'L' || gender === 'male') return 'Laki-laki';
+    if (gender === 'P' || gender === 'female') return 'Perempuan';
+    return gender;
   };
 
   const handleBack = () => {
     router.back();
   };
 
-  const handleSave = () => {
-    console.log('Saving result...');
-    // TODO: Implement save functionality
-    router.push('/history');
+  const handleSave = async () => {
+    if (!analysisData || !childData || saving) return;
+    
+    try {
+      setSaving(true);
+      console.log('💾 Starting save process...');
+      
+      // Use imageUrl directly from analysis data (ComViT response)
+      let finalImageUrl = analysisData.imageUrl;
+      
+      console.log('🖼️ Using direct image URL from analysis:', finalImageUrl);
+      
+      // Option to copy image if needed (currently disabled in favor of direct URL)
+      if (false && finalImageUrl && !finalImageUrl.includes('pemindaian/')) {
+        console.log('� Copying image to pemindaian bucket...');
+        try {
+          finalImageUrl = await copyImageToPemindaian(analysisData.imageUrl, childData.nik);
+          console.log('✅ Image copied to pemindaian:', finalImageUrl);
+        } catch (copyError) {
+          console.warn('⚠️ Failed to copy image, using original URL:', copyError);
+          // Continue with original URL if copy fails
+        }
+      }
+      
+      // Prepare data for Analisis table tanpa tanggal_pemeriksaan
+      const analysisResult = {
+        nik: childData.nik,
+        tinggi: parseFloat(analysisData.height),
+        berat: parseFloat(analysisData.weight),
+        status: analysisData.status as 'severely stunted' | 'stunted' | 'tall' | 'normal',
+        image: finalImageUrl
+      };
+      
+      console.log('📊 Saving to Analisis table (no tanggal_pemeriksaan):', analysisResult);
+      
+      // Save to Analisis table
+      await saveToAnalisisNew(analysisResult);
+      
+      console.log('✅ Analysis saved successfully to Analisis table');
+      setShowSuccessModal(true);
+      
+    } catch (error) {
+      console.error('❌ Error saving result:', error);
+      setShowErrorModal(true);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = () => {
@@ -43,6 +255,42 @@ export default function ResultPage() {
   const handleDetailLengkap = () => {
     setShowDetailModal(true);
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#407A81] mx-auto mb-4"></div>
+            <p className="text-gray-600">Memuat hasil analisis...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Error state
+  if (error || !childData || !analysisData) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+              <h2 className="text-lg font-semibold text-red-800 mb-2">Gagal Memuat Data</h2>
+              <p className="text-red-600 mb-4">{error || 'Data tidak ditemukan'}</p>
+              <button
+                onClick={() => router.back()}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Kembali
+              </button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -77,10 +325,14 @@ export default function ResultPage() {
                     <div className="relative w-full h-96 rounded-xl overflow-hidden shadow-lg">
                       {/* Captured image */}
                       <Image
-                        src="/image/icon/pengukuran-anak.jpg"
+                        src={analysisData.imageUrl}
                         alt="Hasil pengukuran"
                         fill
                         className="object-cover"
+                        onError={(e) => {
+                          // Fallback to default image if captured image fails to load
+                          e.currentTarget.src = '/image/icon/pengukuran-anak.jpg';
+                        }}
                       />
                       {/* Measurement lines overlay */}
                       <div className="absolute inset-0 pointer-events-none">
@@ -104,7 +356,7 @@ export default function ResultPage() {
                 <div className="space-y-4">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                      {childData.name}
+                      {childData.nama}
                     </h2>
                     
                     <div className="space-y-4">
@@ -119,13 +371,17 @@ export default function ResultPage() {
                         <div>
                           <span className="text-gray-400 font-medium text-sm mb-2 block">Usia Bayi saat ini</span>
                           <div className="bg-[#F1F8F9] rounded-lg px-4 py-3">
-                            <span className="font-semibold text-gray-900 text-sm">{childData.age}</span>
+                            <span className="font-semibold text-gray-900 text-sm">
+                              {formatAge(childData.umur_tahun || 0, childData.umur_bulan || 0)}
+                            </span>
                           </div>
                         </div>
                         <div>
                           <span className="text-gray-400 font-medium text-sm mb-2 block">Jenis Kelamin</span>
                           <div className="bg-[#F1F8F9] rounded-lg px-4 py-3">
-                            <span className="font-semibold text-gray-900 text-sm">{childData.gender}</span>
+                            <span className="font-semibold text-gray-900 text-sm">
+                              {formatGender(childData.gender)}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -134,10 +390,10 @@ export default function ResultPage() {
                         <span className="text-gray-400 font-medium text-sm mb-2 block">Waktu Pemeriksaan</span>
                         <div className="flex items-center gap-3">
                           <div className="bg-[#F1F8F9] rounded-lg px-4 py-3 flex-1">
-                            <span className="font-semibold text-gray-900 text-sm">{childData.scanDate}</span>
+                            <span className="font-semibold text-gray-900 text-sm">{analysisData.scanDate}</span>
                           </div>
                           <div className="bg-[#9ECAD6] text-white rounded-lg px-4 py-3 text-center min-w-[120px]">
-                            <span className="font-medium text-sm">{childData.scanTime}</span>
+                            <span className="font-medium text-sm">{analysisData.scanTime}</span>
                           </div>
                         </div>
                       </div>
@@ -159,7 +415,7 @@ export default function ResultPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600 mb-2">Tinggi Badan</p>
-                        <p className="text-4xl font-bold text-[#407A81]">{childData.height}</p>
+                        <p className="text-4xl font-bold text-[#407A81]">{analysisData.height} cm</p>
                       </div>
                       <div className="w-20 h-20 flex items-center justify-center p-3">
                         <Image
@@ -177,7 +433,7 @@ export default function ResultPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600 mb-2">Berat Badan</p>
-                        <p className="text-4xl font-bold text-[#407A81]">{childData.weight}</p>
+                        <p className="text-4xl font-bold text-[#407A81]">{analysisData.weight} kg</p>
                       </div>
                       <div className="w-20 h-20 flex items-center justify-center p-3">
                         <Image
@@ -197,8 +453,19 @@ export default function ResultPage() {
                   
                   <div className="flex items-center justify-center gap-6 mb-6">
                     <div className="flex-1 max-w-lg">
-                      <div className="bg-green-500 text-white rounded-full py-4 px-8 shadow-lg">
-                        <span className="font-semibold text-lg">{childData.status}</span>
+                      <div 
+                        className="text-white rounded-full py-4 px-8 shadow-lg"
+                        style={{ 
+                          backgroundColor: getStatusColors(analysisData.status).textHex 
+                        }}
+                      >
+                        <span className="font-semibold text-lg">
+                          {translateStatus(analysisData.status)}
+                        </span>
+                      </div>
+                      {/* Confidence indicator */}
+                      <div className="mt-2 text-xs text-gray-500">
+                        Confidence: {analysisData.confidence}%
                       </div>
                     </div>
                     <button
@@ -220,9 +487,17 @@ export default function ResultPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-10">
             <button
               onClick={handleSave}
-              className="bg-[#407A81] text-white py-4 px-8 rounded-xl hover:bg-[#326269] transition-colors font-semibold text-lg shadow-lg cursor-pointer"
+              disabled={saving}
+              className="bg-[#407A81] text-white py-4 px-8 rounded-xl hover:bg-[#326269] transition-colors font-semibold text-lg shadow-lg cursor-pointer disabled:opacity-50 flex items-center gap-3"
             >
-              Simpan
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Menyimpan...</span>
+                </>
+              ) : (
+                'Simpan'
+              )}
             </button>
             <button
               onClick={handleDelete}
@@ -245,7 +520,7 @@ export default function ResultPage() {
             {/* Image Section */}
             <div className="relative w-full h-64 rounded-xl overflow-hidden shadow-md mb-8" style={{ backgroundColor: '#FFE5F0' }}>
               <Image
-                src="/image/icon/pengukuran-anak.jpg"
+                src={analysisData.imageUrl}
                 alt="Hasil pengukuran"
                 fill
                 className="object-cover"
@@ -258,14 +533,14 @@ export default function ResultPage() {
                 <span className="text-lg font-medium text-gray-600 mb-4">Tinggi Badan</span>
                 <div className="flex items-center gap-4">
                   <Image src="/image/icon/tinggi-badan.svg" alt="Tinggi Badan" width={80} height={80} />
-                  <span className="text-4xl font-bold text-[#407A81]">{childData.height}</span>
+                  <span className="text-4xl font-bold text-[#407A81]">{analysisData.height} cm</span>
                 </div>
               </div>
               <div className="flex-1 bg-[#E5F5F7] rounded-xl p-8 flex flex-col items-center border border-[#CDE6EA]">
                 <span className="text-lg font-medium text-gray-600 mb-4">Berat Badan</span>
                 <div className="flex items-center gap-4">
                   <Image src="/image/icon/berat-badan.svg" alt="Berat Badan" width={80} height={80} />
-                  <span className="text-4xl font-bold text-[#407A81]">{childData.weight}</span>
+                  <span className="text-4xl font-bold text-[#407A81]">{analysisData.weight} kg</span>
                 </div>
               </div>
             </div>
@@ -282,6 +557,78 @@ export default function ResultPage() {
           </div>
         </div>
       )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowSuccessModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiCheck className="w-8 h-8 text-green-500" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Berhasil Disimpan!</h3>
+              <p className="text-gray-600 mb-6">
+                Hasil analisis telah berhasil disimpan ke database.
+              </p>
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  router.push('/history');
+                }}
+                className="w-full bg-green-500 text-white py-3 rounded-xl hover:bg-green-600 transition-colors font-semibold"
+              >
+                Lihat Riwayat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowErrorModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiTrash2 className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Gagal Menyimpan</h3>
+              <p className="text-gray-600 mb-6">
+                Terjadi kesalahan saat menyimpan hasil analisis. Mungkin data dengan NIK dan tanggal yang sama sudah ada.
+              </p>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="w-full bg-red-500 text-white py-3 rounded-xl hover:bg-red-600 transition-colors font-semibold"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
+  );
+}
+
+function ResultPageLoading() {
+  return (
+    <Layout>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#407A81] mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat hasil analisis...</p>
+        </div>
+      </div>
+    </Layout>
+  );
+}
+
+export default function ResultPage() {
+  return (
+    <Suspense fallback={<ResultPageLoading />}>
+      <ResultPageContent />
+    </Suspense>
   );
 }

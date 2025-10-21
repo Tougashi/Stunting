@@ -4,6 +4,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components';
 import { FiFilter, FiSearch } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { fetchParentsData } from '@/utils/database-clean';
 
 type ParentProfile = {
@@ -48,16 +49,26 @@ export default function TambahAnakPage() {
         const data = await fetchParentsData();
         
         // Transform ParentData to ParentProfile
-        const transformedData: ParentProfile[] = data.map(parent => ({
-          id: parent.id,
-          fatherName: parent.fatherName,
-          motherName: parent.motherName,
-          nik: parent.nik,
-          childrenCount: parent.childrenCount,
-          fatherImage: parent.fatherImage || '/image/icon/pengukuran-anak.jpg',
-          motherImage: parent.motherImage || '/image/icon/pengukuran-anak.jpg',
-          no_kk: parent.no_kk
-        }));
+        const transformedData: ParentProfile[] = data.map(parent => {
+          console.log('Parent data:', {
+            id: parent.id,
+            fatherName: parent.fatherName,
+            motherName: parent.motherName,
+            fatherImage: parent.fatherImage,
+            motherImage: parent.motherImage
+          });
+          
+          return {
+            id: parent.id,
+            fatherName: parent.fatherName,
+            motherName: parent.motherName,
+            nik: parent.nik,
+            childrenCount: parent.childrenCount,
+            fatherImage: parent.fatherImage || '/image/icon/pengukuran-anak.jpg',
+            motherImage: parent.motherImage || '/image/icon/pengukuran-anak.jpg',
+            no_kk: parent.no_kk
+          };
+        });
         
         setParents(transformedData);
         
@@ -276,6 +287,37 @@ export default function TambahAnakPage() {
   );
 }
 
+// Component for parent image with fallback
+function ParentImage({ src, alt, isDefault }: { src: string; alt: string; isDefault: boolean }) {
+  const [imageError, setImageError] = useState(false);
+  
+  console.log('ParentImage:', { src, alt, isDefault, imageError });
+  
+  if (isDefault || imageError) {
+    return (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+      </svg>
+    );
+  }
+  
+  return (
+    <Image 
+      src={src} 
+      alt={alt}
+      fill
+      className="object-cover"
+      onError={() => {
+        console.log('Image failed to load:', src);
+        setImageError(true);
+      }}
+      onLoad={() => {
+        console.log('Image loaded successfully:', src);
+      }}
+    />
+  );
+}
+
 function ParentCard({ parent, onSelect }: { parent: ParentProfile; onSelect: () => void }) {
   return (
     <div 
@@ -285,10 +327,12 @@ function ParentCard({ parent, onSelect }: { parent: ParentProfile; onSelect: () 
     >
       {/* Father row */}
       <div className="flex items-center gap-3 sm:gap-4">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
-          </svg>
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center relative">
+          <ParentImage 
+            src={parent.fatherImage}
+            alt={`Foto ${parent.fatherName}`}
+            isDefault={!parent.fatherImage || parent.fatherImage === '/image/icon/pengukuran-anak.jpg'}
+          />
         </div>
         <div>
           <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 leading-tight">{parent.fatherName}</div>
@@ -298,10 +342,12 @@ function ParentCard({ parent, onSelect }: { parent: ParentProfile; onSelect: () 
 
       {/* Mother row */}
       <div className="flex items-center gap-3 sm:gap-4 mt-3 sm:mt-4">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
-          </svg>
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center relative">
+          <ParentImage 
+            src={parent.motherImage}
+            alt={`Foto ${parent.motherName}`}
+            isDefault={!parent.motherImage || parent.motherImage === '/image/icon/pengukuran-anak.jpg'}
+          />
         </div>
         <div>
           <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 leading-tight">{parent.motherName}</div>

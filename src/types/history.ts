@@ -7,7 +7,7 @@ export interface HistoryRecord {
   gender: 'male' | 'female';
   height: number;
   weight: number;
-  status: 'normal' | 'beresiko' | 'stunting';
+  status: 'severely stunted' | 'stunted' | 'tall' | 'normal';
   date: string;
   scanTime?: string;
   imageUrl?: string;
@@ -18,7 +18,7 @@ export interface SummaryCard {
   value: number;
   description: string;
   bgGradient: string;
-  status: 'normal' | 'beresiko' | 'stunting';
+  status: 'severely stunted' | 'stunted' | 'tall' | 'normal';
 }
 
 export interface FilterOptions {

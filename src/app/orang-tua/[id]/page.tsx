@@ -8,6 +8,19 @@ import { useRouter } from 'next/navigation';
 import { fetchParentDetailByNoKK } from '@/utils/database-clean';
 import { useParams } from 'next/navigation';
 
+// Helper function to format age display
+const formatAge = (years: number, months: number): string => {
+  if (years === 0 && months === 0) {
+    return 'Baru lahir';
+  } else if (years === 0) {
+    return `${months} Bulan`;
+  } else if (months === 0) {
+    return `${years} Tahun`;
+  } else {
+    return `${years} Tahun ${months} Bulan`;
+  }
+};
+
 export default function OrangTuaDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -69,7 +82,8 @@ export default function OrangTuaDetailPage() {
             name: child.nama,
             avatar: child.image_anak || '/image/icon/bayi-icon.svg',
             gender: child.gender,
-            age: child.umur,
+            ageYears: child.umur_tahun || 0,
+            ageMonths: child.umur_bulan || 0,
             nik: child.nik
           })),
         };
@@ -287,7 +301,7 @@ export default function OrangTuaDetailPage() {
                       <div className="min-w-0">
                         <div className="font-semibold text-gray-900 text-lg leading-tight truncate">{c.name}</div>
                         <div className="text-xs text-[#407A81]">{c.gender === 'L' ? 'Laki-laki' : 'Perempuan'}</div>
-                        <div className="text-xs text-gray-500">Umur: {c.age || 0} Tahun</div>
+                        <div className="text-xs text-gray-500">Umur: {formatAge(c.ageYears || 0, c.ageMonths || 0)}</div>
                       </div>
                     </div>
                   </div>

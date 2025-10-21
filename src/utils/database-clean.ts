@@ -46,10 +46,9 @@ export interface AnalysisData {
   nik: string;
   tinggi: number;
   berat: number;
-  status: string;
+  status: 'severely stunted' | 'stunted' | 'tall' | 'normal';
   created_at: string;
   image: string | null;
-  tanggal_pemeriksaan: string;
 }
 
 export const fetchAnalysisDetail = async (scanId: string) => {
@@ -477,7 +476,7 @@ export const fetchChildDetailWithParents = async (childNik: string): Promise<{
       .from('Analisis')
       .select('*')
       .eq('nik', childNik)
-      .order('tanggal_pemeriksaan', { ascending: false });
+      .order('created_at', { ascending: false });
       
     if (analysisError) {
       console.error('Error fetching analysis data:', analysisError);
@@ -633,6 +632,134 @@ export const deleteChildImage = async (imageUrl: string): Promise<void> => {
   } catch (error) {
     console.error('❌ Error deleting child image:', error);
     // Don't throw error, just log it
+  }
+};
+
+// Delete child data and all related data
+export const deleteChild = async (nik: string): Promise<void> => {
+  console.log('🗑️ Starting child deletion process for NIK:', nik);
+  
+  try {
+    // Step 1: Get child data to collect image URL before deletion
+    console.log('1️⃣ Fetching child data to collect image URL...');
+    
+    const { data: childData, error: childError } = await supabase
+      .from('DataAnak')
+      .select('image_anak')
+      .eq('nik', nik)
+      .single();
+      
+    if (childError) {
+      console.error('Error fetching child data:', childError);
+      // Continue with deletion even if we can't fetch the image
+    }
+    
+    // Step 2: Get all analysis data for this child to delete images
+    console.log('2️⃣ Fetching analysis data to delete related images...');
+    
+    const { data: analysisData, error: analysisError } = await supabase
+      .from('Analisis')
+      .select('image')
+      .eq('nik', nik);
+      
+    if (analysisError) {
+      console.error('Error fetching analysis data:', analysisError);
+    }
+    
+    // Step 3: Get TempAnalisis data to delete images
+    console.log('3️⃣ Fetching temp analysis data to delete related images...');
+    
+    const { data: tempAnalysisData, error: tempAnalysisError } = await supabase
+      .from('TempAnalisis')
+      .select('image')
+      .eq('nik', nik);
+      
+    if (tempAnalysisError) {
+      console.error('Error fetching temp analysis data:', tempAnalysisError);
+    }
+
+    // Step 4: Delete all images from storage
+    console.log('4️⃣ Deleting all related images from storage...');
+    
+    // Delete child image
+    if (childData?.image_anak && childData.image_anak !== '/image/icon/pengukuran-anak.jpg') {
+      try {
+        await deleteChildImage(childData.image_anak);
+      } catch (error) {
+        console.error('Error deleting child image:', error);
+      }
+    }
+    
+    // Delete analysis images
+    if (analysisData && analysisData.length > 0) {
+      for (const analysis of analysisData) {
+        if (analysis.image) {
+          try {
+            await deleteAnalysisImage(analysis.image);
+          } catch (error) {
+            console.error('Error deleting analysis image:', error);
+          }
+        }
+      }
+    }
+    
+    // Delete temp analysis images
+    if (tempAnalysisData && tempAnalysisData.length > 0) {
+      for (const tempAnalysis of tempAnalysisData) {
+        if (tempAnalysis.image) {
+          try {
+            await deleteAnalysisImage(tempAnalysis.image);
+          } catch (error) {
+            console.error('Error deleting temp analysis image:', error);
+          }
+        }
+      }
+    }
+
+    // Step 5: Delete database records
+    console.log('5️⃣ Deleting database records...');
+    
+    // Delete TempAnalisis records
+    const { error: tempAnalysisDeleteError } = await supabase
+      .from('TempAnalisis')
+      .delete()
+      .eq('nik', nik);
+      
+    if (tempAnalysisDeleteError) {
+      console.error('Error deleting temp analysis records:', tempAnalysisDeleteError);
+    } else {
+      console.log('✅ TempAnalisis records deleted successfully');
+    }
+    
+    // Delete Analisis records
+    const { error: analysisDeleteError } = await supabase
+      .from('Analisis')
+      .delete()
+      .eq('nik', nik);
+      
+    if (analysisDeleteError) {
+      console.error('Error deleting analysis records:', analysisDeleteError);
+    } else {
+      console.log('✅ Analisis records deleted successfully');
+    }
+    
+    // Delete child record
+    const { error: childDeleteError } = await supabase
+      .from('DataAnak')
+      .delete()
+      .eq('nik', nik);
+      
+    if (childDeleteError) {
+      console.error('Error deleting child record:', childDeleteError);
+      throw childDeleteError;
+    }
+    
+    console.log('✅ Child and all related data deleted successfully!');
+    console.log('🎉 Child deletion completed!');
+    
+  } catch (error) {
+    console.error('❌ Error in child deletion process:', error);
+    throw error;
   }
 };
 
@@ -1169,5 +1296,452 @@ export const deleteParentData = async (no_kk: string) => {
   } catch (error) {
     console.error('❌ Error in parent data deletion process:', error);
     throw error;
+  }
+};
+
+// Interface for history data
+export interface HistoryData {
+  id: string;
+  name: string;
+  nik: string;
+  age_years: number;
+  age_months: number;
+  gender: 'male' | 'female';
+  height: number;
+  weight: number;
+  status: 'severely stunted' | 'stunted' | 'tall' | 'normal';
+  date: string;
+  imageUrl: string | null;
+  analysisId: string;
+}
+
+// Fetch all analysis history data with child information
+export const fetchAnalysisHistory = async (): Promise<HistoryData[]> => {
+  try {
+    console.log('🔄 Fetching analysis history data...');
+    
+    // Get all analysis data with child information
+    const { data: analysisData, error: analysisError } = await supabase
+      .from('Analisis')
+      .select(`
+        id,
+        nik,
+        tinggi,
+        berat,
+        status,
+        created_at,
+        image,
+        DataAnak!inner (
+          nama,
+          gender,
+          umur_tahun,
+          umur_bulan
+        )
+      `)
+      .order('created_at', { ascending: false });
+      
+    if (analysisError) {
+      console.error('Error fetching analysis history:', analysisError);
+      throw analysisError;
+    }
+    
+    if (!analysisData) {
+      console.log('No analysis data found');
+      return [];
+    }
+    
+    console.log('✅ Analysis data found:', analysisData);
+    
+    // Map data to match expected format
+    const result: HistoryData[] = analysisData
+      .filter(analysis => analysis.DataAnak && Array.isArray(analysis.DataAnak) && analysis.DataAnak.length > 0) // Only include records with valid child data
+      .map(analysis => {
+        const childData = Array.isArray(analysis.DataAnak) ? analysis.DataAnak[0] : analysis.DataAnak;
+        return {
+          id: analysis.id,
+          name: childData.nama,
+          nik: analysis.nik,
+          age_years: childData.umur_tahun || 0,
+          age_months: childData.umur_bulan || 0,
+          gender: childData.gender as 'male' | 'female',
+          height: analysis.tinggi,
+          weight: analysis.berat,
+          status: analysis.status as 'severely stunted' | 'stunted' | 'tall' | 'normal',
+          date: analysis.created_at, // Gunakan created_at
+          imageUrl: analysis.image,
+          analysisId: analysis.id
+        };
+      });
+
+    console.log('✅ Final history data:', result);
+    return result;
+    
+  } catch (error) {
+    console.error('❌ Error fetching analysis history:', error);
+    throw error;
+  }
+};
+
+// Helper function to translate status to Indonesian
+export const translateStatus = (status: string): string => {
+  switch (status) {
+    case 'normal':
+      return 'Normal';
+    case 'tall':
+      return 'Tinggi';
+    case 'stunted':
+      return 'Stunting';
+    case 'severely stunted':
+      return 'Stunting Parah';
+    default:
+      return status;
+  }
+};
+
+// Helper function to get status colors for UI
+export const getStatusColors = (status: string) => {
+  switch (status) {
+    case 'normal':
+      return { bg: 'bg-[#E8F5E9]', text: 'text-[#4CAF50]', bgHex: '#E8F5E9', textHex: '#4CAF50' };
+    case 'tall':
+      return { bg: 'bg-[#E3F2FD]', text: 'text-[#2196F3]', bgHex: '#E3F2FD', textHex: '#2196F3' };
+    case 'stunted':
+      return { bg: 'bg-[#FFF9E6]', text: 'text-[#FFA726]', bgHex: '#FFF9E6', textHex: '#FFA726' };
+    case 'severely stunted':
+      return { bg: 'bg-[#FFEBEE]', text: 'text-[#EF5350]', bgHex: '#FFEBEE', textHex: '#EF5350' };
+    default:
+      return { bg: 'bg-gray-100', text: 'text-gray-600', bgHex: '#F3F4F6', textHex: '#4B5563' };
+  }
+};
+
+// Get summary counts by status
+export const getAnalysisSummary = async () => {
+  try {
+    console.log('🔄 Fetching analysis summary...');
+    
+    // Get count of each status
+    const { data: normalCount, error: normalError } = await supabase
+      .from('Analisis')
+      .select('id', { count: 'exact' })
+      .eq('status', 'normal');
+      
+    const { data: tallCount, error: tallError } = await supabase
+      .from('Analisis')
+      .select('id', { count: 'exact' })
+      .eq('status', 'tall');
+      
+    const { data: stuntedCount, error: stuntedError } = await supabase
+      .from('Analisis')
+      .select('id', { count: 'exact' })
+      .eq('status', 'stunted');
+      
+    const { data: severelyStuntedCount, error: severelyStuntedError } = await supabase
+      .from('Analisis')
+      .select('id', { count: 'exact' })
+      .eq('status', 'severely stunted');
+      
+    if (normalError || tallError || stuntedError || severelyStuntedError) {
+      console.error('Error fetching summary counts:', { normalError, tallError, stuntedError, severelyStuntedError });
+      throw normalError || tallError || stuntedError || severelyStuntedError;
+    }
+    
+    const summary = [
+      {
+        title: 'Normal',
+        value: normalCount?.length || 0,
+        description: '',
+        bgGradient: 'linear-gradient(180deg, #FFFFFF 4.31%, #7BFFBB 100%)',
+        status: 'normal' as const
+      },
+      {
+        title: 'Tinggi',
+        value: tallCount?.length || 0,
+        description: '',
+        bgGradient: 'linear-gradient(180deg, #FFFFFF 4.31%, #90E0FF 100%)',
+        status: 'tall' as const
+      },
+      {
+        title: 'Stunting',
+        value: stuntedCount?.length || 0,
+        description: '',
+        bgGradient: 'linear-gradient(180deg, #FFFFFF 4.31%, #FFE090 100%)',
+        status: 'stunted' as const
+      },
+      {
+        title: 'Stunting Parah',
+        value: severelyStuntedCount?.length || 0,
+        description: '',
+        bgGradient: 'linear-gradient(180deg, #FFFFFF 4.31%, #FDABAB 100%)',
+        status: 'severely stunted' as const
+      }
+    ];
+    
+    console.log('✅ Analysis summary:', summary);
+    return summary;
+    
+  } catch (error) {
+    console.error('❌ Error fetching analysis summary:', error);
+    throw error;
+  }
+};
+
+// TempAnalysisData interface - SAMA PERSIS seperti AnalysisData tapi tanpa tanggal_pemeriksaan
+export interface TempAnalysisData {
+  id?: string;
+  nik: string;
+  tinggi: number;
+  berat: number;
+  status: 'severely stunted' | 'stunted' | 'tall' | 'normal';
+  created_at?: string;
+  image: string | null;
+}
+
+// Insert TempAnalisis
+export const insertTempAnalisis = async (data: Omit<TempAnalysisData, 'id' | 'created_at'>): Promise<TempAnalysisData> => {
+  try {
+    console.log('📝 Inserting TempAnalisis:', data);
+    
+    const { data: result, error } = await supabase
+      .from('TempAnalisis')
+      .insert([data])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ TempAnalisis insert error:', error);
+      throw new Error(`Failed to insert temp analysis: ${error.message}`);
+    }
+    
+    console.log('✅ TempAnalisis inserted successfully:', result);
+    return result;
+    
+  } catch (error) {
+    console.error('❌ Error inserting temp analysis:', error);
+    throw error;
+  }
+};
+
+// Save to Analisis menggunakan interface yang sudah ada
+export const saveToAnalisisNew = async (data: Omit<AnalysisData, 'id' | 'created_at'>): Promise<AnalysisData> => {
+  try {
+    console.log('💾 Saving to Analisis:', data);
+    
+    const { data: result, error } = await supabase
+      .from('Analisis')
+      .insert([data])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ Analisis insert error:', error);
+      throw new Error(`Failed to save analysis: ${error.message}`);
+    }
+    
+    console.log('✅ Analisis saved successfully:', result);
+    return result;
+    
+  } catch (error) {
+    console.error('❌ Error saving to analisis:', error);
+    throw error;
+  }
+};
+
+// Fetch TempAnalysis History untuk History page
+export const fetchTempAnalysisHistory = async (): Promise<HistoryData[]> => {
+  try {
+    console.log('📋 Fetching TempAnalysis history...');
+    
+    // Get TempAnalisis data
+    const { data: tempAnalysisData, error: tempError } = await supabase
+      .from('TempAnalisis')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (tempError) {
+      console.error('❌ TempAnalysis history fetch error:', tempError);
+      throw new Error(`Failed to fetch temp analysis history: ${tempError.message}`);
+    }
+    
+    if (!tempAnalysisData || tempAnalysisData.length === 0) {
+      console.log('✅ No TempAnalysis data found');
+      return [];
+    }
+    
+    // Get unique NIKs to fetch child data
+    const niks = [...new Set(tempAnalysisData.map(record => record.nik))];
+    
+    // Get child data for all NIKs
+    const { data: childrenData, error: childError } = await supabase
+      .from('DataAnak')
+      .select('nik, nama, umur_tahun, umur_bulan, gender')
+      .in('nik', niks);
+    
+    if (childError) {
+      // Continue without child data rather than failing completely
+    }
+    
+    // Create a map for quick child lookup
+    const childMap = new Map();
+    if (childrenData) {
+      childrenData.forEach(child => {
+        childMap.set(child.nik, child);
+      });
+    }
+    
+    // Transform data to HistoryData format
+    const historyData: HistoryData[] = tempAnalysisData.map((record: any) => {
+      const child = childMap.get(record.nik);
+      
+      return {
+        id: record.id,
+        analysisId: record.id, // Use TempAnalysis ID
+        name: child?.nama || 'Unknown',
+        nik: record.nik,
+        age_years: child?.umur_tahun || 0,
+        age_months: child?.umur_bulan || 0,
+        gender: child?.gender || 'male',
+        height: record.tinggi,
+        weight: record.berat,
+        status: record.status,
+        date: record.created_at, // Gunakan created_at saja
+        imageUrl: record.image
+      };
+    });
+    
+    console.log('✅ TempAnalysis history fetched:', historyData);
+    return historyData;
+    
+  } catch (error) {
+    console.error('❌ Error fetching temp analysis history:', error);
+    throw error;
+  }
+};
+
+// Fetch single TempAnalysis by ID untuk detail page
+export const fetchTempAnalysisById = async (id: string): Promise<TempAnalysisData | null> => {
+  try {
+    console.log('🔍 Fetching TempAnalysis by ID:', id);
+    
+    const { data: tempAnalysis, error } = await supabase
+      .from('TempAnalisis')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('❌ TempAnalysis fetch error:', error);
+      throw new Error(`Failed to fetch temp analysis: ${error.message}`);
+    }
+    
+    console.log('✅ TempAnalysis found:', tempAnalysis);
+    return tempAnalysis;
+    
+  } catch (error) {
+    console.error('❌ Error fetching temp analysis by ID:', error);
+    return null;
+  }
+};
+
+// Delete TempAnalysis
+export const deleteTempAnalysis = async (id: string): Promise<boolean> => {
+  try {
+    console.log('🗑️ Deleting TempAnalysis with ID:', id);
+    
+    // First get the record to extract image path
+    const { data: tempAnalysis, error: fetchError } = await supabase
+      .from('TempAnalisis')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (fetchError) {
+      console.error('Error fetching temp analysis for delete:', fetchError);
+      throw fetchError;
+    }
+    
+    // Delete image from storage if exists
+    if (tempAnalysis?.image) {
+      console.log('🖼️ Deleting image from storage:', tempAnalysis.image);
+      
+      let imagePath = tempAnalysis.image;
+      
+      // If image field contains full URL, extract the path
+      if (imagePath.startsWith('https://')) {
+        const pathMatch = imagePath.match(/\/storage\/v1\/object\/public\/(.+)$/);
+        if (pathMatch) {
+          imagePath = pathMatch[1];
+        }
+      }
+      
+      const { error: storageError } = await supabase.storage
+        .from('pemindaian')
+        .remove([imagePath]);
+        
+      if (storageError) {
+        console.error('Error deleting image from storage:', storageError);
+      } else {
+        console.log('✅ Image deleted from storage successfully');
+      }
+    }
+    
+    // Delete from database
+    const { error: deleteError } = await supabase
+      .from('TempAnalisis')
+      .delete()
+      .eq('id', id);
+      
+    if (deleteError) {
+      console.error('Error deleting temp analysis:', deleteError);
+      throw deleteError;
+    }
+    
+    console.log('✅ TempAnalysis deleted successfully');
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Error deleting temp analysis:', error);
+    throw error;
+  }
+};
+
+// Check if TempAnalysis has been saved to Analisis
+export const checkIfSavedToAnalysis = async (tempId: string): Promise<boolean> => {
+  try {
+    console.log('🔍 Checking if saved to Analisis for temp ID:', tempId);
+    
+    // Get temp analysis data
+    const { data: tempAnalysis, error: tempError } = await supabase
+      .from('TempAnalisis')
+      .select('nik, tinggi, berat')
+      .eq('id', tempId)
+      .single();
+    
+    if (tempError || !tempAnalysis) {
+      console.log('TempAnalysis not found');
+      return false;
+    }
+    
+    // Check if exists in Analisis with same data (tanpa tanggal_pemeriksaan)
+    const { data: analysisData, error: analysisError } = await supabase
+      .from('Analisis')
+      .select('id')
+      .eq('nik', tempAnalysis.nik)
+      .eq('tinggi', tempAnalysis.tinggi)
+      .eq('berat', tempAnalysis.berat)
+      .limit(1);
+    
+    if (analysisError) {
+      console.error('Error checking Analisis:', analysisError);
+      return false;
+    }
+    
+    const isSaved = analysisData && analysisData.length > 0;
+    console.log('✅ Check result - isSaved:', isSaved);
+    
+    return isSaved;
+    
+  } catch (error) {
+    console.error('❌ Error checking if saved to analisis:', error);
+    return false;
   }
 };

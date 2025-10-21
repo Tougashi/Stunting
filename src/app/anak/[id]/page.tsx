@@ -7,6 +7,38 @@ import { useRouter, useParams } from 'next/navigation';
 import { FiArrowLeft, FiMoreVertical, FiEdit2, FiTrash2, FiClock, FiArrowRightCircle } from 'react-icons/fi';
 import { fetchChildDetailWithParents, ChildData, AddressData, AnalysisData } from '@/utils/database-clean';
 
+// Function to translate status to Indonesian (same as in database-clean.ts)
+const translateStatus = (status: string): string => {
+  switch (status) {
+    case 'normal':
+      return 'Normal';
+    case 'tall':
+      return 'Tinggi';
+    case 'stunted':
+      return 'Stunting';
+    case 'severely stunted':
+      return 'Stunting Parah';
+    default:
+      return status;
+  }
+};
+
+// Function to get status colors (same as in database-clean.ts)
+const getStatusColors = (status: string) => {
+  switch (status) {
+    case 'normal':
+      return { bg: 'bg-[#E8F5E9]', text: 'text-[#4CAF50]', bgHex: '#E8F5E9', textHex: '#4CAF50' };
+    case 'tall':
+      return { bg: 'bg-[#E3F2FD]', text: 'text-[#2196F3]', bgHex: '#E3F2FD', textHex: '#2196F3' };
+    case 'stunted':
+      return { bg: 'bg-[#FFF9E6]', text: 'text-[#FFA726]', bgHex: '#FFF9E6', textHex: '#FFA726' };
+    case 'severely stunted':
+      return { bg: 'bg-[#FFEBEE]', text: 'text-[#EF5350]', bgHex: '#FFEBEE', textHex: '#EF5350' };
+    default:
+      return { bg: 'bg-gray-100', text: 'text-gray-600', bgHex: '#F3F4F6', textHex: '#4B5563' };
+  }
+};
+
 // Interfaces
 interface ChildDetailData {
   id: string;
@@ -46,7 +78,7 @@ interface ScanHistoryRecord {
   age: number;
   height: number;
   weight: number;
-  status: 'normal' | 'beresiko' | 'stunting';
+  status: 'normal' | 'tall' | 'stunted' | 'severely stunted';
   date: string;
   timeAgo: string;
 }
@@ -92,7 +124,7 @@ const scanHistoryData: { [key: string]: ScanHistoryRecord[] } = {
       age: 3,
       height: 30,
       weight: 1.5,
-      status: 'beresiko',
+      status: 'stunted',
       date: '2024-08-20',
       timeAgo: '3 Jam yang lalu'
     }
@@ -104,7 +136,7 @@ const scanHistoryData: { [key: string]: ScanHistoryRecord[] } = {
       age: 1,
       height: 25,
       weight: 1.0,
-      status: 'stunting',
+      status: 'severely stunted',
       date: '2024-08-20',
       timeAgo: '1 Jam yang lalu'
     }
@@ -200,19 +232,17 @@ export default function ProfileAnakPage() {
           
           // Convert analysis data to scan history
           const scanHistoryData: ScanHistoryRecord[] = dataWithAddress.analysisHistory.map((analysis) => {
-            const analysisDate = new Date(analysis.tanggal_pemeriksaan);
-            const now = new Date();
-            const timeDiff = now.getTime() - analysisDate.getTime();
-            const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+            const analysisDate = new Date(analysis.created_at);
             
-            let timeAgo = '';
-            if (daysDiff === 0) {
-              timeAgo = 'Hari ini';
-            } else if (daysDiff === 1) {
-              timeAgo = '1 hari yang lalu';
-            } else {
-              timeAgo = `${daysDiff} hari yang lalu`;
-            }
+            // Format date and time: DD/MM/YYYY HH:mm
+            const timeAgo = analysisDate.toLocaleString('id-ID', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
+            });
 
             return {
               id: analysis.id,
@@ -220,8 +250,8 @@ export default function ProfileAnakPage() {
               age: dataWithAddress.child!.umur_tahun || 0,
               height: analysis.tinggi,
               weight: analysis.berat,
-              status: analysis.status as 'normal' | 'beresiko' | 'stunting',
-              date: analysis.tanggal_pemeriksaan,
+              status: analysis.status as 'normal' | 'tall' | 'stunted' | 'severely stunted',
+              date: analysis.created_at,
               timeAgo: timeAgo
             };
           });
@@ -443,7 +473,7 @@ export default function ProfileAnakPage() {
               {/* Profile Content */}
               <div className="px-5 sm:px-8 pb-6 sm:pb-8">
                 {/* Photo and Name */}
-                <div className="flex flex-col items-center mb-8 sm:mb-10">
+                <div className="flex flex-col items-center mb-8 sm:mb-10 mt-6">
                   <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full flex items-center justify-center mb-3 sm:mb-4 overflow-hidden bg-[#E5F3F5] text-[#397789]">
                     {form.photo ? (
                       <img src={form.photo} alt={form.name} className="w-full h-full object-cover" />
@@ -686,13 +716,7 @@ export default function ProfileAnakPage() {
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-gray-900 text-sm mb-1">{child.name}</div>
                             <div className="text-xs text-gray-500 flex items-center gap-2">
-                              <span className="flex items-center gap-1">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
-                                  <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
-                                </svg>
-                                {row.age} Tahun
-                              </span>
+                              
                               <span className="inline-flex items-center gap-1">
                                 <FiClock size={12} />
                                 {row.timeAgo}
@@ -711,15 +735,10 @@ export default function ProfileAnakPage() {
                         </div>
                         {/* name & meta */}
                           <div className="flex-1 min-w-0">
-                            <div className="font-bold text-gray-900 text-base mb-1">{child.name}</div>
+                            <div className="font-bold text-gray-900 text-base mb-1">{child.name}
+                            </div>
                             <div className="text-sm text-gray-500 flex items-center gap-3">
-                              <span className="flex items-center gap-1">
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
-                                <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
-                              </svg>
-                                {row.age} Tahun
-                            </span>
+                              
                               <span className="inline-flex items-center gap-1">
                               <FiClock size={14} />
                                 {row.timeAgo}
@@ -744,15 +763,9 @@ export default function ProfileAnakPage() {
                         </div>
                         {/* status */}
                           <div className="shrink-0" style={{ width: '120px' }}>
-                            {row.status === 'normal' && (
-                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#E8F5E9] text-[#4CAF50]">Sehat</span>
-                            )}
-                            {row.status === 'beresiko' && (
-                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFF9E6] text-[#FFA726]">Beresiko</span>
-                            )}
-                            {row.status === 'stunting' && (
-                              <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFEBEE] text-[#EF5350]">Stunting</span>
-                          )}
+                            <span className={`inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium ${getStatusColors(row.status).bg} ${getStatusColors(row.status).text}`}>
+                              {translateStatus(row.status)}
+                            </span>
                         </div>
                           {/* action button */}
                           <button onClick={() => handleViewScanDetail(row.id)} className="shrink-0 w-10 h-10 rounded-full border-2 border-[#397789] flex items-center justify-center text-[#397789] hover:bg-[#397789] hover:text-white transition-colors cursor-pointer">
@@ -780,15 +793,9 @@ export default function ProfileAnakPage() {
                           </div>
                           {/* status */}
                           <div className="flex items-center gap-2">
-                            {row.status === 'normal' && (
-                              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-[#E8F5E9] text-[#4CAF50]">Sehat</span>
-                            )}
-                            {row.status === 'beresiko' && (
-                              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-[#FFF9E6] text-[#FFA726]">Beresiko</span>
-                            )}
-                            {row.status === 'stunting' && (
-                              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-[#FFEBEE] text-[#EF5350]">Stunting</span>
-                            )}
+                            <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColors(row.status).bg} ${getStatusColors(row.status).text}`}>
+                              {translateStatus(row.status)}
+                            </span>
                             {/* action button */}
                             <button onClick={() => handleViewScanDetail(row.id)} className="w-8 h-8 rounded-full border-2 border-[#397789] flex items-center justify-center text-[#397789] hover:bg-[#397789] hover:text-white transition-colors cursor-pointer">
                               <FiArrowRightCircle size={16} />

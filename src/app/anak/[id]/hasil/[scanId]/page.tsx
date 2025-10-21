@@ -18,7 +18,7 @@ interface ScanRecord {
   gender: string;
   height: number;
   weight: number;
-  status: 'normal' | 'beresiko' | 'stunting';
+  status: 'normal' | 'tall' | 'stunted' | 'severely stunted';
   date: string;
   scanTime: string;
   imageUrl: string;
@@ -35,6 +35,44 @@ const getImageUrl = (nik: string, imageName: string) => {
   
   // Otherwise, construct the URL
   return `https://kgswlhiolxopunygghrs.supabase.co/storage/v1/object/public/pemindaian/${nik}/${imageName}`;
+};
+
+// Function to map database status to UI status (using same logic as history page)
+const mapDatabaseStatusToUI = (dbStatus: string): 'normal' | 'tall' | 'stunted' | 'severely stunted' => {
+  // Keep the original database status values, don't convert them
+  return dbStatus as 'normal' | 'tall' | 'stunted' | 'severely stunted';
+};
+
+// Function to translate status to Indonesian (same as in database-clean.ts)
+const translateStatus = (status: string): string => {
+  switch (status) {
+    case 'normal':
+      return 'Normal';
+    case 'tall':
+      return 'Tinggi';
+    case 'stunted':
+      return 'Stunting';
+    case 'severely stunted':
+      return 'Stunting Parah';
+    default:
+      return status;
+  }
+};
+
+// Function to get status colors (same as in database-clean.ts)
+const getStatusColors = (status: string) => {
+  switch (status) {
+    case 'normal':
+      return { bg: 'bg-[#E8F5E9]', text: 'text-[#4CAF50]', bgHex: '#E8F5E9', textHex: '#4CAF50' };
+    case 'tall':
+      return { bg: 'bg-[#E3F2FD]', text: 'text-[#2196F3]', bgHex: '#E3F2FD', textHex: '#2196F3' };
+    case 'stunted':
+      return { bg: 'bg-[#FFF9E6]', text: 'text-[#FFA726]', bgHex: '#FFF9E6', textHex: '#FFA726' };
+    case 'severely stunted':
+      return { bg: 'bg-[#FFEBEE]', text: 'text-[#EF5350]', bgHex: '#FFEBEE', textHex: '#EF5350' };
+    default:
+      return { bg: 'bg-gray-100', text: 'text-gray-600', bgHex: '#F3F4F6', textHex: '#4B5563' };
+  }
 };
 
 export default function HasilAnalisisPage() {
@@ -70,8 +108,8 @@ export default function HasilAnalisisPage() {
             gender: data.child.gender,
             height: data.analysis.tinggi,
             weight: data.analysis.berat,
-            status: data.analysis.status as 'normal' | 'beresiko' | 'stunting',
-            date: data.analysis.tanggal_pemeriksaan,
+            status: mapDatabaseStatusToUI(data.analysis.status),
+            date: data.analysis.created_at,
             scanTime: analysisTime.toLocaleTimeString('id-ID', { 
               hour: '2-digit', 
               minute: '2-digit',
@@ -220,7 +258,7 @@ export default function HasilAnalisisPage() {
               <div className="space-y-8 mb-8">
                 {/* Photo */}
                 <div className="flex justify-center">
-                  <div className="relative w-full max-w-md">
+                  <div className="relative w-full max-w-md ">
                     <div className="relative w-full h-96 rounded-xl overflow-hidden shadow-md" style={{ backgroundColor: '#FFE5F0' }}>
                       {/* Captured image */}
                       <Image
@@ -334,15 +372,14 @@ export default function HasilAnalisisPage() {
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex-1">
                       <div className={`
-                        text-white rounded-xl py-4 px-6 shadow-sm text-center
-                        ${record.status === 'normal' ? 'bg-green-500' : ''}
-                        ${record.status === 'beresiko' ? 'bg-yellow-500' : ''}
-                        ${record.status === 'stunting' ? 'bg-red-400' : ''}
-                      `}>
+                        text-white rounded-xl py-4 px-6 shadow-sm
+                        ${record.status === 'normal' ? 'bg-[#4CAF50]' : 
+                          record.status === 'tall' ? 'bg-[#2196F3]' : 
+                          record.status === 'stunted' ? 'bg-[#FFA726]' : 
+                          record.status === 'severely stunted' ? 'bg-[#EF5350]' : 'bg-gray-500'}
+                      `} style={{ textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <span className="font-bold text-base">
-                          {record.status === 'normal' && 'Anak Tidak Stunting'}
-                          {record.status === 'beresiko' && 'Anak Beresiko Stunting'}
-                          {record.status === 'stunting' && 'Anak Terkena Stunting'}
+                          {translateStatus(record.status)}
                         </span>
                       </div>
                     </div>

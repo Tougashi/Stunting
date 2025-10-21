@@ -5,7 +5,7 @@ import { Layout } from '@/components';
 import { Bayi } from '@/types/bayi';
 import { useRouter } from 'next/navigation';
 import { FiMoreVertical, FiFilter, FiSearch } from 'react-icons/fi';
-import { fetchChildrenData, ChildData } from '@/utils/database-clean';
+import { fetchChildrenData, ChildData, deleteChild } from '@/utils/database-clean';
 
 export default function AnakPage() {
   const router = useRouter();
@@ -19,6 +19,7 @@ export default function AnakPage() {
   const [childrenData, setChildrenData] = useState<ChildData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
   // Fetch children data on component mount
@@ -54,9 +55,38 @@ export default function AnakPage() {
     };
   }, []);
 
-  // Handle child card click -> go to child detail page
   const handleChildClick = (child: Bayi) => {
     router.push(`/anak/${child.id}`);
+  };
+
+  // Handle delete child
+  const handleDeleteChild = async (childId: string) => {
+    try {
+      setIsDeleting(true);
+      
+      // Find the child data to get the NIK
+      const childToDelete = childrenData.find(child => child.id === childId);
+      if (!childToDelete) {
+        throw new Error('Data anak tidak ditemukan');
+      }
+      
+      console.log('Deleting child with NIK:', childToDelete.nik);
+      
+      // Delete from database and storage
+      await deleteChild(childToDelete.nik);
+      
+      // Remove from local state
+      setChildrenData(prev => prev.filter(child => child.id !== childId));
+      
+      console.log('Child deleted successfully');
+      setDeleteId(null);
+      
+    } catch (error) {
+      console.error('Error deleting child:', error);
+      setError('Gagal menghapus data anak. Silakan coba lagi.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Handle camera selection
@@ -325,16 +355,21 @@ export default function AnakPage() {
               <h2 className="text-xl font-semibold text-center text-gray-900 mb-4">
                 Hapus data anak ini?
               </h2>
+              <p className="text-center text-gray-600 mb-6">
+                Tindakan ini akan menghapus semua data anak termasuk riwayat pemindaian dan tidak dapat dibatalkan.
+              </p>
               <div className="space-y-3">
                 <button
-                  onClick={() => { console.log('hapus anak', deleteId); setDeleteId(null); }}
-                  className="w-full bg-[#407A81] text-white py-3 px-6 rounded-lg hover:bg-[#326269] transition-colors font-medium"
+                  onClick={() => handleDeleteChild(deleteId)}
+                  disabled={isDeleting}
+                  className="w-full bg-red-500 text-white py-3 px-6 rounded-lg hover:bg-red-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Hapus
+                  {isDeleting ? 'Menghapus...' : 'Hapus'}
                 </button>
                 <button
                   onClick={() => setDeleteId(null)}
-                  className="w-full border border-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  disabled={isDeleting}
+                  className="w-full border border-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Batalkan
                 </button>

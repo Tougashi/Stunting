@@ -77,8 +77,11 @@ export default function ProfilePage() {
                   
                   {/* Name */}
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                    {user.name || user.username || 'User'}
+                    {user.name || 'User'}
                   </h2>
+                  {user.username && (
+                    <p className="text-gray-600 mb-2">@{user.username}</p>
+                  )}
                   <p className="text-gray-600 mb-2">{user.email}</p>
                   {user.no_hp && (
                     <p className="text-gray-600 mb-12">{user.no_hp}</p>

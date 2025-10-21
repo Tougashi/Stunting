@@ -3,90 +3,11 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components';
 import { SummaryCards } from '@/components/sections/SummaryCards';
-import { SummaryCard, HistoryRecord } from '@/types/history';
+import { SummaryCard } from '@/types/history';
+import { fetchTempAnalysisHistory, getAnalysisSummary, HistoryData, translateStatus, getStatusColors } from '@/utils/database-clean';
 import Image from 'next/image';
 import { FiFilter, FiSearch, FiClock, FiArrowRightCircle } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
-
-// Data dummy untuk demo
-const summaryData: SummaryCard[] = [
-  {
-    title: 'Normal',
-    value: 2,
-    description: 'Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi',
-    bgGradient: 'linear-gradient(180deg, #FFFFFF 4.31%, #7BFFBB 100%)',
-    status: 'normal'
-  },
-  {
-    title: 'Beresiko',
-    value: 10,
-    description: 'Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi',
-    bgGradient: 'linear-gradient(180deg, #FFFFFF 4.31%, #FFE090 100%)',
-    status: 'beresiko'
-  },
-  {
-    title: 'Stunting',
-    value: 5,
-    description: 'Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi',
-    bgGradient: 'linear-gradient(180deg, #FFFFFF 4.31%, #FDABAB 100%)',
-    status: 'stunting'
-  }
-];
-
-const historyData: HistoryRecord[] = [
-  {
-    id: '1',
-    name: 'Shopia Davis',
-    nik: '029102910920191',
-    age: 1,
-    gender: 'female',
-    height: 75,
-    weight: 10,
-    status: 'stunting',
-    date: '2024-08-20',
-    scanTime: '09:30 WIB',
-    imageUrl: '/image/icon/pengukuran-anak.jpg'
-  },
-  {
-    id: '2',
-    name: 'Emma Jhon',
-    nik: '029102910920192',
-    age: 2,
-    gender: 'female',
-    height: 85,
-    weight: 12,
-    status: 'normal',
-    date: '2024-08-19',
-    scanTime: '10:05 WIB',
-    imageUrl: '/image/icon/pengukuran-anak.jpg'
-  },
-  {
-    id: '3',
-    name: 'Liam Chen',
-    nik: '029102910920193',
-    age: 3,
-    gender: 'male',
-    height: 90,
-    weight: 14,
-    status: 'beresiko',
-    date: '2024-08-18',
-    scanTime: '14:20 WIB',
-    imageUrl: '/image/icon/pengukuran-anak.jpg'
-  },
-  {
-    id: '4',
-    name: 'Shopia Davis',
-    nik: '029102910920194',
-    age: 1,
-    gender: 'female',
-    height: 75,
-    weight: 10,
-    status: 'stunting',
-    date: '2024-08-17',
-    scanTime: '11:15 WIB',
-    imageUrl: '/image/icon/pengukuran-anak.jpg'
-  }
-];
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -94,6 +15,9 @@ export default function HistoryPage() {
   const [sortOption, setSortOption] = useState('latest');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [historyData, setHistoryData] = useState<HistoryData[]>([]);
+  const [summaryData, setSummaryData] = useState<SummaryCard[]>([]);
+  const [loading, setLoading] = useState(true);
   const filterRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -110,6 +34,31 @@ export default function HistoryPage() {
     };
   }, []);
 
+  // Load data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Load both history data and summary data
+        const [historyResult, summaryResult] = await Promise.all([
+          fetchTempAnalysisHistory(),
+          getAnalysisSummary()
+        ]);
+        
+        setHistoryData(historyResult);
+        setSummaryData(summaryResult);
+        
+      } catch (error) {
+        console.error('Error loading history data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
   const toggleStatusFilter = (status: string) => {
     setStatusFilter(prev => 
       prev.includes(status) 
@@ -117,6 +66,37 @@ export default function HistoryPage() {
         : [...prev, status]
     );
   };
+
+  // Helper function to format age display
+  const formatAge = (years: number, months: number): string => {
+    if (years === 0 && months === 0) {
+      return 'Baru lahir';
+    } else if (years === 0) {
+      return `${months} Bulan`;
+    } else if (months === 0) {
+      return `${years} Tahun`;
+    } else {
+      return `${years} Tahun ${months} Bulan`;
+    }
+  };
+
+  // Helper function to format specific date and time
+  const formatDateTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const formattedDate = date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+    const formattedTime = date.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Jakarta'
+    });
+    return `${formattedDate} ${formattedTime}`;
+  };
+
+
 
   const filtered = useMemo(() => {
     const result = historyData.filter((it) => {
@@ -133,7 +113,11 @@ export default function HistoryPage() {
         case 'za':
           return b.name.localeCompare(a.name);
         case 'age':
-          return a.age - b.age;
+          // Sort by age_years first, then age_months
+          if (a.age_years !== b.age_years) {
+            return a.age_years - b.age_years;
+          }
+          return a.age_months - b.age_months;
         case 'latest':
         default:
           return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -141,10 +125,10 @@ export default function HistoryPage() {
     });
 
     return result;
-  }, [query, statusFilter, sortOption]);
+  }, [query, statusFilter, sortOption, historyData]);
 
-  const handleViewDetail = (record: HistoryRecord) => {
-    router.push(`/history/${record.id}`);
+  const handleViewDetail = (record: HistoryData) => {
+    router.push(`/history/${record.analysisId}`);
   };
 
   return (
@@ -175,15 +159,25 @@ export default function HistoryPage() {
                 Riwayat Pemindaian
               </h1>
               <p className="text-sm sm:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto text-center">
-                Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi
+                
               </p>
             </div>
 
             {/* Summary Cards */}
             <SummaryCards data={summaryData} />
 
-            {/* Filter + Search + List */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
+            {/* Loading State */}
+            {loading ? (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#397789]"></div>
+                  <span className="ml-3 text-gray-600">Memuat data...</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Filter + Search + List */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
                 {/* Filter Button */}
                 <div className="relative flex justify-center sm:justify-start" ref={filterRef}>
@@ -235,9 +229,10 @@ export default function HistoryPage() {
                           <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">Status:</label>
                           <div className="space-y-1 sm:space-y-2">
                             {[
-                              { value: 'normal', label: 'Sehat' },
-                              { value: 'beresiko', label: 'Monitor' },
-                              { value: 'stunting', label: 'Kritis' }
+                              { value: 'normal', label: 'Normal' },
+                              { value: 'tall', label: 'Tinggi' },
+                              { value: 'stunted', label: 'Stunting' },
+                              { value: 'severely stunted', label: 'Stunting Parah' }
                             ].map((option) => (
                               <label key={option.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors">
                                 <input
@@ -292,14 +287,14 @@ export default function HistoryPage() {
                         <div className="text-xs text-gray-500 flex items-center gap-2">
                           <span className="flex items-center gap-1">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
-                              <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
+                              <path d="M12 1v6m0 0l4-4m-4 4L8 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M20.49 9A9 9 0 1 1 5.64 5.64a9 9 0 0 1 14.85 3.36" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
-                            {row.age} Tahun
+                            {formatAge(row.age_years, row.age_months)}
                           </span>
                           <span className="inline-flex items-center gap-1">
                             <FiClock size={12} />
-                            2 Jam yang lalu
+                            {formatDateTime(row.date)}
                           </span>
                         </div>
                       </div>
@@ -319,15 +314,11 @@ export default function HistoryPage() {
                         <div className="font-bold text-gray-900 text-base mb-1">{row.name}</div>
                         <div className="text-sm text-gray-500 flex items-center gap-3">
                           <span className="flex items-center gap-1">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
-                              <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z" fill="currentColor"/>
-                            </svg>
-                            {row.age} Tahun
+                            Umur: {formatAge(row.age_years, row.age_months)}
                           </span>
                           <span className="inline-flex items-center gap-1">
                             <FiClock size={14} />
-                            2 Jam yang lalu
+                            {formatDateTime(row.date)}
                           </span>
                         </div>
                       </div>
@@ -365,21 +356,17 @@ export default function HistoryPage() {
 
                       {/* status */}
                       <div className="flex items-center gap-2">
-                        {row.status === 'normal' && (
-                          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-[#E8F5E9] text-[#4CAF50]">
-                            Sehat
-                          </span>
-                        )}
-                        {row.status === 'beresiko' && (
-                          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-[#FFF9E6] text-[#FFA726]">
-                            Beresiko
-                          </span>
-                        )}
-                        {row.status === 'stunting' && (
-                          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-[#FFEBEE] text-[#EF5350]">
-                            Stunting
-                          </span>
-                        )}
+                        <span 
+                          className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColors(row.status).bg} ${getStatusColors(row.status).text}`}
+                          style={{ 
+                            textAlign: 'center',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {translateStatus(row.status)}
+                        </span>
 
                         {/* action button */}
                         <button 
@@ -436,22 +423,18 @@ export default function HistoryPage() {
                       </div>
 
                       {/* status */}
-                      <div className="shrink-0" style={{ width: '100px' }}>
-                        {row.status === 'normal' && (
-                          <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#E8F5E9] text-[#4CAF50]">
-                            Sehat
-                          </span>
-                        )}
-                        {row.status === 'beresiko' && (
-                          <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFF9E6] text-[#FFA726]">
-                            Beresiko
-                          </span>
-                        )}
-                        {row.status === 'stunting' && (
-                          <span className="inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium bg-[#FFEBEE] text-[#EF5350]">
-                            Stunting
-                          </span>
-                        )}
+                      <div className="shrink-0" style={{ width: '120px' }}>
+                        <span 
+                          className={`inline-flex items-center justify-center w-full px-4 py-2 rounded-full text-sm font-medium ${getStatusColors(row.status).bg} ${getStatusColors(row.status).text}`}
+                          style={{ 
+                            textAlign: 'center',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {translateStatus(row.status)}
+                        </span>
                       </div>
 
                       {/* action button */}
@@ -469,6 +452,8 @@ export default function HistoryPage() {
                 )}
               </div>
             </div>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -484,10 +484,8 @@ function CameraPageContent() {
       if (result.status === 'success' || uploadResponse.ok) {
         console.log('✅ Upload to Production API successful');
         
-        // Return the reference or image identifier
-        const imageIdentifier = result.image || result.ref || ref;
-        console.log('✅ Image identifier:', imageIdentifier);
-        return imageIdentifier;
+        // Ambil image_url langsung dari response
+        return result.image_url || null;
       } else {
         console.error('❌ API returned error status:', result);
         throw new Error(result.message || 'Upload failed - server returned error status');
@@ -774,6 +772,8 @@ function CameraPageContent() {
     try {
       setIsUploading(true);
       
+      let finalImageUrl: string | null = null;
+      
       // For Camera Handphone, upload the captured blob to Production API
       if (selectedCamera === 'Camera Handphone' && capturedBlob) {
         console.log('📤 Uploading captured image to Production API...');
@@ -784,34 +784,37 @@ function CameraPageContent() {
           return;
         }
         
-        const uploadedImageName = await uploadToProductionAPI(capturedBlob);
+        // Kirim ke ComViT API dan ambil image_url langsung
+        const imageUrl = await uploadToProductionAPI(capturedBlob);
         
-        if (uploadedImageName) {
-          // Store the uploaded image name
-          sessionStorage.setItem('uploadedImageName', uploadedImageName);
-          console.log('✅ Upload successful, image name:', uploadedImageName);
+        if (imageUrl) {
+          finalImageUrl = imageUrl;
+          console.log('✅ Got marked image URL from ComViT:', finalImageUrl);
         } else {
           // Upload failed, error already handled in uploadToProductionAPI
           console.error('❌ Upload failed, aborting navigation');
           return;
         }
+      } else if (selectedCamera === 'Camera Raspberry') {
+        // For Raspberry, get the uploaded image name from session storage
+        const uploadedImageName = sessionStorage.getItem('uploadedImageName');
+        if (uploadedImageName) {
+          finalImageUrl = `https://kgswlhiolxopunygghrs.supabase.co/storage/v1/object/public/temp/${uploadedImageName}`;
+          console.log('⚠️ Using original image URL as fallback:', finalImageUrl);
+        }
       }
       
-      // Get the uploaded image name from session storage
-      const uploadedImageName = sessionStorage.getItem('uploadedImageName');
-      
-      console.log('Processing captured image:', capturedImage);
-      console.log('Uploaded image name:', uploadedImageName);
+      console.log('🎯 Final image URL for result page:', finalImageUrl);
       
       // Get child ID from URL params
       const childId = searchParams?.get('child');
       const cameraType = searchParams?.get('camera');
       
-      // Navigate to result page with captured image data and uploaded image name
+      // Navigate to result page with imageUrl parameter
       const params = new URLSearchParams({
         ...(childId && { child: childId }),
         ...(cameraType && { camera: cameraType }),
-        ...(uploadedImageName && { image: uploadedImageName }),
+        ...(finalImageUrl && { imageUrl: finalImageUrl }),
         timestamp: Date.now().toString()
       });
       

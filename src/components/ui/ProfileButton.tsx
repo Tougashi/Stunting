@@ -13,7 +13,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
 }) => {
   const { user } = useAuth();
 
-  const displayName = user?.name || user?.username || 'Profile';
+  const displayName = user?.name || 'Profile';
   const profileImage = user?.profile_image;
 
   return (
