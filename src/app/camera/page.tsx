@@ -396,115 +396,6 @@ export default function CameraPage() {
     setShowCameraDropdown(false);
   };
 
-  const uploadCapturedImage = async (imageDataUrl: string): Promise<string | null> => {
-    try {
-      console.log('📤 Starting upload process...');
-      console.log('API URL:', RASPBERRY_CAPTURE_URL);
-      console.log('Image data URL length:', imageDataUrl.length);
-      
-      setIsUploading(true);
-      
-      // Convert data URL to blob
-      console.log('🔄 Converting data URL to blob...');
-      const response = await fetch(imageDataUrl);
-      const blob = await response.blob();
-      console.log('✅ Blob created:', {
-        size: blob.size,
-        type: blob.type
-      });
-      
-      // Create FormData
-      const formData = new FormData();
-      const filename = `capture_${Date.now()}.jpg`;
-      formData.append('image', blob, filename);
-      console.log('📝 FormData prepared with filename:', filename);
-      
-      // Upload to API
-      console.log('🚀 Sending request to API...');
-      const uploadResponse = await fetch(RASPBERRY_CAPTURE_URL, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'accept': 'application/json',
-          // Do NOT set Content-Type for FormData - browser will set it automatically with boundary
-        },
-        mode: 'cors',
-      });
-      
-      console.log('📡 Response received:', {
-        status: uploadResponse.status,
-        statusText: uploadResponse.statusText,
-        ok: uploadResponse.ok,
-        headers: Object.fromEntries(uploadResponse.headers.entries())
-      });
-      
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text().catch(() => 'No error text available');
-        console.error('❌ Upload failed:', {
-          status: uploadResponse.status,
-          statusText: uploadResponse.statusText,
-          errorText
-        });
-        throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
-      }
-      
-      // Get raw response text first for better debugging
-      const responseText = await uploadResponse.text();
-      console.log('📄 Raw response text:', responseText);
-      
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('❌ Failed to parse JSON response:', parseError);
-        throw new Error(`Invalid JSON response: ${responseText}`);
-      }
-      
-      console.log('📥 Parsed JSON response:', result);
-      
-      if (result.status === 'success') {
-        console.log('✅ Upload successful, checking image field...');
-        
-        if (result.image) {
-          console.log('✅ Upload capture successful with image:', result.image);
-          return result.image;
-        } else {
-          console.warn('⚠️ Upload successful but image is null. Full response:', result);
-          // Server processed successfully but didn't return image filename
-          // This might be expected behavior, so we'll create a fallback filename
-          const fallbackFilename = `handphone_capture_${Date.now()}.jpg`;
-          console.log('🔄 Using fallback filename:', fallbackFilename);
-          return fallbackFilename;
-        }
-      } else {
-        console.error('❌ API returned error status:', result);
-        throw new Error(result.message || 'Upload failed - server returned error status');
-      }
-      
-    } catch (error) {
-      console.error('❌ Upload capture error:', error);
-      
-      // Check if it's a network error
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.error('🌐 Network error - possible CORS or connectivity issue');
-        console.error('💡 Suggestions:');
-        console.error('   1. Check if the Raspberry Pi server is running');
-        console.error('   2. Verify CORS is properly configured on the server');
-        console.error('   3. Try accessing the API directly in browser');
-        setErrorMessage('Gagal terhubung ke server. Periksa koneksi jaringan atau server Raspberry Pi.');
-      } else {
-        setErrorMessage('Gagal mengunggah gambar. Silakan coba lagi.');
-      }
-      
-      setTimeout(() => setErrorMessage(null), 8000);
-      
-      return null;
-    } finally {
-      setIsUploading(false);
-      console.log('🏁 Upload process finished');
-    }
-  };
-
   // Upload to Production API (ComViT) - For Camera Handphone
   const uploadToProductionAPI = async (imageBlob: Blob): Promise<string | null> => {
     try {
@@ -769,7 +660,7 @@ export default function CameraPage() {
               const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
               const response = await fetch(imageDataUrl);
               imageBlob = await response.blob();
-            } catch (e) {
+            } catch {
               console.warn('Calibrate drawImage failed (CORS likely), proceeding without image payload');
             }
           }
@@ -851,7 +742,7 @@ export default function CameraPage() {
           } else if (errorJson.status === 'failed') {
             errorMessage = errorJson.message || 'Calibration Failed. Marker not detected.';
           }
-        } catch (e) {
+        } catch {
           // If not JSON, use the text response
           errorMessage = errorText || res.statusText;
         }
@@ -863,7 +754,7 @@ export default function CameraPage() {
         const result = await res.json();
         console.log('✅ Calibration successful:', result);
         setCalibrationResult(JSON.stringify(result, null, 2));
-      } catch (parseError) {
+      } catch {
         console.log('✅ Calibration successful (non-JSON response)');
         setCalibrationResult('Calibration completed successfully');
       }
@@ -984,7 +875,7 @@ export default function CameraPage() {
         try {
           result = await response.json();
           console.log('✅ Ping response:', result);
-        } catch (parseError) {
+        } catch {
           // If response is not JSON, treat as success with text response
           const textResponse = await response.text();
           result = { message: textResponse };

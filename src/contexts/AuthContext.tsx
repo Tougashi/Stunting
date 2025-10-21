@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { User, AuthUser, LoginCredentials } from '@/types/user';
+import { AuthUser, LoginCredentials } from '@/types/user';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -78,7 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Remove password from user data
-      const { password, ...userData } = data;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _, ...userData } = data;
       const authUser: AuthUser = userData;
 
       // Store user in state and localStorage

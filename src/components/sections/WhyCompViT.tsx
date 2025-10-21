@@ -42,46 +42,6 @@ const WhyCard: React.FC<WhyCardProps> = ({ title, description }) => {
   );
 };
 
-interface CTACardProps {
-  image: string;
-  title: string;
-  subtitle: string;
-  buttonText: string;
-  onButtonClick?: () => void;
-}
-
-const CTACard: React.FC<CTACardProps> = ({ image, title, subtitle, buttonText, onButtonClick }) => {
-  return (
-    <div className="relative overflow-hidden text-center h-64 sm:h-80 lg:h-96 shadow-[0px_1px_3px_1px_#00000026,0px_1px_2px_0px_#0000004D] opacity-100 rounded-tl-[50px] sm:rounded-tl-[100px] rounded-tr-[50px] sm:rounded-tr-[100px] rounded-br-[10px] sm:rounded-br-[20px] rounded-bl-[10px] sm:rounded-bl-[20px]">
-      {/* Background Image */}
-      <Image 
-        src={image}
-        alt="Pengukuran Anak" 
-        fill
-        className="object-cover"
-      />
-      
-      {/* Overlay Content */}
-      <div className="absolute inset-0 bg-black/30 flex flex-col justify-end p-4 sm:p-6 lg:p-8">
-        <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1 sm:mb-2 leading-tight text-center">
-          {title}
-        </h3>
-        <h4 className="text-base sm:text-lg lg:text-xl font-bold text-white mb-4 sm:mb-6 text-center">
-          {subtitle}
-        </h4>
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={onButtonClick}
-          className="!bg-white !text-black hover:!bg-gray-100 focus:ring-white shadow-md px-4 sm:px-6 lg:px-8 py-2 sm:py-3 text-sm sm:text-base font-semibold tracking-wide rounded-full"
-        >
-          {buttonText}
-        </Button>
-      </div>
-    </div>
-  );
-};
-
 interface WhyCompViTProps {
   className?: string;
   onStartDetection?: () => void;

@@ -119,7 +119,7 @@ export default function HistoryPage() {
   };
 
   const filtered = useMemo(() => {
-    let result = historyData.filter((it) => {
+    const result = historyData.filter((it) => {
       const matchesSearch = it.name.toLowerCase().includes(query.toLowerCase());
       const matchesStatus = statusFilter.length === 0 || statusFilter.includes(it.status);
       return matchesSearch && matchesStatus;
@@ -142,14 +142,6 @@ export default function HistoryPage() {
 
     return result;
   }, [query, statusFilter, sortOption]);
-
-  const handleEdit = (record: HistoryRecord) => {
-    console.log('Edit record:', record);
-  };
-
-  const handleDelete = (id: string) => {
-    console.log('Delete record:', id);
-  };
 
   const handleViewDetail = (record: HistoryRecord) => {
     router.push(`/history/${record.id}`);

@@ -3,7 +3,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Layout } from '@/components';
 import Link from 'next/link';
-import Image from 'next/image';
 import { FiMoreVertical, FiArrowLeft } from 'react-icons/fi';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
@@ -11,7 +10,8 @@ import { useRouter } from 'next/navigation';
 export default function OrangTuaDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const parent = {
+  
+  const parent = useMemo(() => ({
     father: {
       name: 'Mustafa',
       nik: '002211102131223',
@@ -45,9 +45,9 @@ export default function OrangTuaDetailPage() {
       { id: '2', name: 'Siti Rosidah', avatar: '/image/icon/bayi-icon.svg' },
       { id: '3', name: 'Rehand', avatar: '/image/icon/bayi-icon.svg' },
     ],
-  };
+  }), []);
 
-  const initialData = useMemo(() => parent, []);
+  const initialData = useMemo(() => parent, [parent]);
   const [data, setData] = useState(initialData);
   const [isEditing, setIsEditing] = useState(false);
   useEffect(() => {
@@ -67,9 +67,10 @@ export default function OrangTuaDetailPage() {
 
   const update = (path: string, value: string | number) => {
     setData((prev) => {
-      const next: any = { ...prev };
+      const next = { ...prev };
       const keys = path.split('.');
-      let cur: any = next;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let cur: Record<string, any> = next;
       for (let i = 0; i < keys.length - 1; i++) {
         cur[keys[i]] = { ...cur[keys[i]] };
         cur = cur[keys[i]];
@@ -448,7 +449,9 @@ function IdentityRow({ editing = false, image, name, nik, phone, birthPlace, bir
                   if (file) {
                     const url = URL.createObjectURL(file);
                     // update preview image
-                    onChange && onChange('image', url);
+                    if (onChange) {
+                      onChange('image', url);
+                    }
                   }
                 }}
               />

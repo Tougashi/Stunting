@@ -28,8 +28,8 @@ export default function TambahOrangTuaPage() {
   const [fatherImage, setFatherImage] = useState<string>('');
   const [motherImage, setMotherImage] = useState<string>('');
 
-  const update = (section: string, field: string, value: string) => {
-    setForm((prev: any) => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
+  const update = (section: keyof typeof form, field: string, value: string) => {
+    setForm((prev) => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
   };
 
   const handleSubmit = () => {

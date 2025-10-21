@@ -20,7 +20,6 @@ const Hero: React.FC<HeroProps> = ({
   subtitle = "",
   description = "Pantau tinggi dan berat badan anak secara otomatis dengan teknologi Computer Vision & IoT yang akurat dan terpercaya.",
   buttonText = "Mulai Deteksi Sekarang",
-  heroImage = "/hero-main-placeholder.png", // besar
   onButtonClick,
   className = '',
 }) => {

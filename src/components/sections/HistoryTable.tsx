@@ -5,14 +5,10 @@ import { HistoryRecord, FilterOptions, SortOption } from '@/types/history';
 
 interface HistoryTableProps {
   data: HistoryRecord[];
-  onEdit?: (record: HistoryRecord) => void;
-  onDelete?: (id: string) => void;
 }
 
 export const HistoryTable: React.FC<HistoryTableProps> = ({ 
-  data, 
-  onEdit, 
-  onDelete 
+  data 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({
@@ -69,7 +65,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
   };
 
   const filteredAndSortedData = React.useMemo(() => {
-    let filtered = data.filter(record => {
+    const filtered = data.filter(record => {
       const matchesSearch = record.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = filters.status.length === 0 || filters.status.includes(record.status);
       return matchesSearch && matchesStatus;
@@ -265,15 +261,12 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({
                   {new Date(record.date).toLocaleDateString('id-ID')}
                 </td>
                 <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium">
-                  <button 
-                    onClick={() => onEdit?.(record)}
-                    className="text-teal-700 hover:text-teal-800 mr-3 cursor-pointer"
-                  >
+                  <span className="text-teal-700">
                     <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                  </button>
+                  </span>
                 </td>
               </tr>
             ))}

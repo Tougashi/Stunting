@@ -150,7 +150,8 @@ export const fetchParentsData = async (): Promise<ParentData[]> => {
 
     // Group parents by family (no_kk)
     console.log('👨‍👩‍👧‍👦 Step 3: Grouping parents by family...');
-    const familyGroups: { [key: string]: { father?: any; mother?: any; no_kk: string } } = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const familyGroups: { [key: string]: { father?: Record<string, any>; mother?: Record<string, any>; no_kk: string } } = {};
 
     // Initialize families from parents data
     uniqueNoKk.forEach(no_kk => {

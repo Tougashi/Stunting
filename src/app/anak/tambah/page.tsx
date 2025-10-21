@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components';
-import Image from 'next/image';
 import { FiFilter, FiSearch } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 

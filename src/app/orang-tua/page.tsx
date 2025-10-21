@@ -2,10 +2,9 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components';
-import Image from 'next/image';
 import { FiFilter, FiSearch, FiMoreVertical, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
-import { fetchParentsData, ParentData } from '@/utils/database';
+import { fetchParentsData } from '@/utils/database-clean';
 
 type ParentProfile = {
   id: string;
@@ -45,7 +44,25 @@ export default function OrangTuaPage() {
         setLoading(true);
         setError('');
         const data = await fetchParentsData();
-        setParents(data);
+        
+        // Transform ParentData to ParentProfile
+        const transformedData: ParentProfile[] = data.map(parent => ({
+          id: parent.id,
+          fatherName: parent.fatherName,
+          motherName: parent.motherName,
+          nik: parent.nik,
+          childrenCount: parent.childrenCount,
+          fatherImage: parent.fatherImage || '',
+          motherImage: parent.motherImage || ''
+        }));
+        
+        setParents(transformedData);
+        
+        if (transformedData.length === 0) {
+          setError('Tidak ada data orang tua ditemukan');
+        } else {
+          setError(''); // Clear any previous error
+        }
       } catch (err) {
         console.error('Error loading parents data:', err);
         setError('Gagal memuat data orang tua');
@@ -56,6 +73,11 @@ export default function OrangTuaPage() {
 
     loadParentsData();
   }, []);
+
+  // Reset current page when parents data changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [parents]);
 
   const filtered = useMemo(() => {
     const list = parents.filter(p =>
@@ -78,7 +100,7 @@ export default function OrangTuaPage() {
     });
 
     return list;
-  }, [query, sortOption]);
+  }, [parents, query, sortOption]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -138,7 +160,7 @@ export default function OrangTuaPage() {
                           <div className="space-y-2">
                             {[{value:'latest',label:'Terbaru'},{value:'az',label:'Nama A-Z'},{value:'za',label:'Nama Z-A'},{value:'children',label:'Jumlah Anak'}].map((opt) => (
                               <label key={opt.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors">
-                                <input type="radio" name="sortFilter" value={opt.value} checked={sortOption===opt.value as any} onChange={(e)=>setSortOption(e.target.value as any)} className="w-4 h-4 border-gray-300 focus:ring-0 focus:ring-offset-0" style={{accentColor:'#407A81'}} />
+                                <input type="radio" name="sortFilter" value={opt.value} checked={sortOption===opt.value} onChange={(e)=>setSortOption(e.target.value as 'latest'|'az'|'za'|'children')} className="w-4 h-4 border-gray-300 focus:ring-0 focus:ring-offset-0" style={{accentColor:'#407A81'}} />
                                 <span className="text-sm text-gray-700 whitespace-nowrap">{opt.label}</span>
                               </label>
                             ))}

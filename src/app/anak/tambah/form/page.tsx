@@ -4,7 +4,6 @@ import React, { useState, Suspense, useRef } from 'react';
 import { Layout } from '@/components';
 import { FiArrowLeft } from 'react-icons/fi';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
 
 function TambahAnakFormContent() {
   const router = useRouter();

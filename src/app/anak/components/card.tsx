@@ -1,7 +1,5 @@
 'use client'
 
-import Link from "next/link"
-import { useState } from "react";
 import { Bayi } from "@/types/bayi";
 import Image from "next/image";
 import { FaTrash } from "react-icons/fa";
@@ -13,8 +11,6 @@ interface BayiCardProps {
 }
 
 export default function BayiCard({ image, bayi }: BayiCardProps) {
-    const [isCardOpen, setCardOpen] = useState<boolean>(false);
-
     return (
         <div className="border rounded-2xl py-7 px-2 shadow border-gray-300">
             <div className="flex flex-col w-full space-y-1">

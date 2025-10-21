@@ -3,13 +3,12 @@
 import React, { useState } from 'react';
 import { Layout } from '@/components';
 import { FiArrowLeft, FiTrash2 } from 'react-icons/fi';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 export default function ResultPage() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   // Mock data - in real app this would come from props or API
   const childData = {

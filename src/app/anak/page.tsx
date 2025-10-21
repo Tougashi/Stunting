@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Layout } from '@/components';
 import { Bayi } from '@/types/bayi';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FiMoreVertical, FiFilter, FiSearch } from 'react-icons/fi';
 
@@ -114,7 +113,7 @@ export default function ScanPage() {
   };
 
   const filteredAndSortedChildren = useMemo(() => {
-    let filtered = dummyChildren.filter(child => {
+    const filtered = dummyChildren.filter(child => {
       const matchesSearch = child.name.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesSearch;
     });
