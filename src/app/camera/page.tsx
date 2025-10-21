@@ -863,13 +863,9 @@ export default function CameraPage() {
         const result = await res.json();
         console.log('✅ Calibration successful:', result);
         setCalibrationResult(JSON.stringify(result, null, 2));
-        
-        // Show success message
-        alert(`Kalibrasi berhasil!\n\nCamera: ${selectedCamera}\nStatus: Success`);
       } catch (parseError) {
         console.log('✅ Calibration successful (non-JSON response)');
         setCalibrationResult('Calibration completed successfully');
-        alert(`Kalibrasi berhasil!\n\nCamera: ${selectedCamera}`);
       }
       
     } catch (error) {
@@ -1062,15 +1058,6 @@ export default function CameraPage() {
 
           {/* Camera Selector Dropdown */}
           <div className="relative flex items-center gap-2">
-            {/* Child Info Badge - Show loaded child data */}
-            {childData && (
-              <div className="bg-green-500/90 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-xs shadow-lg flex items-center gap-2">
-                <span>👶 {childData.name}</span>
-                <span className="opacity-75">|</span>
-                <span>{childData.gender === 'male' ? '♂️' : '♀️'} {childData.age} bulan</span>
-              </div>
-            )}
-            
             {/* Test Connection Button */}
             <button
               onClick={testConnection}
