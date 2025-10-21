@@ -5,7 +5,6 @@ import { Layout } from '@/components';
 import Image from 'next/image';
 import { FiFilter, FiSearch, FiMoreVertical, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
-import { fetchParentsData, ParentData } from '@/utils/database';
 
 type ParentProfile = {
   id: string;
@@ -17,15 +16,22 @@ type ParentProfile = {
   motherImage: string;
 };
 
+const parents: ParentProfile[] = Array.from({ length: 16 }).map((_, i) => ({
+  id: String(i + 1),
+  fatherName: 'Mustafa',
+  motherName: 'Kharidah',
+  nik: `06${String(123456789012 + i)}`,
+  childrenCount: (i % 3) + 1,
+  fatherImage: '/image/icon/pengukuran-anak.jpg',
+  motherImage: '/image/icon/pengukuran-anak.jpg',
+}));
+
 export default function OrangTuaPage() {
   const [query, setQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
   const [sortOption, setSortOption] = useState<'latest'|'az'|'za'|'children'>('latest');
   const [showFilters, setShowFilters] = useState(false);
-  const [parents, setParents] = useState<ParentProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const filterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,25 +42,6 @@ export default function OrangTuaPage() {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Fetch data from database
-  useEffect(() => {
-    const loadParentsData = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const data = await fetchParentsData();
-        setParents(data);
-      } catch (err) {
-        console.error('Error loading parents data:', err);
-        setError('Gagal memuat data orang tua');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadParentsData();
   }, []);
 
   const filtered = useMemo(() => {
@@ -109,7 +96,7 @@ export default function OrangTuaPage() {
             <div className="text-center mb-6 sm:mb-8">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black">Profile Orang Tua</h1>
               <p className="text-sm sm:text-base text-gray-600 mt-2">
-                
+                Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi Deskripsi
               </p>
             </div>
 
@@ -164,30 +151,11 @@ export default function OrangTuaPage() {
 
             {/* Grid Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-              {loading ? (
-                <div className="col-span-full text-center text-gray-500 py-10">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#407A81]"></div>
-                  <p className="mt-2">Memuat data...</p>
-                </div>
-              ) : error ? (
-                <div className="col-span-full text-center text-red-500 py-10">
-                  <p>{error}</p>
-                  <button 
-                    onClick={() => window.location.reload()} 
-                    className="mt-2 px-4 py-2 bg-[#407A81] text-white rounded-md hover:bg-[#326269]"
-                  >
-                    Coba Lagi
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {paginatedData.map((p) => (
-                    <ParentCard key={p.id} parent={p} />
-                  ))}
-                  {paginatedData.length === 0 && (
-                    <div className="col-span-full text-center text-gray-500 py-10">Tidak ada data</div>
-                  )}
-                </>
+              {paginatedData.map((p) => (
+                <ParentCard key={p.id} parent={p} />
+              ))}
+              {paginatedData.length === 0 && (
+                <div className="col-span-full text-center text-gray-500 py-10">Tidak ada data</div>
               )}
             </div>
 
@@ -297,7 +265,6 @@ function ParentCard({ parent }: { parent: ParentProfile }) {
         </div>
         <div>
           <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 leading-tight">{parent.fatherName}</div>
-          <div className="text-sm text-[#407A81] font-medium">Ayah</div>
         </div>
       </div>
 
@@ -310,7 +277,6 @@ function ParentCard({ parent }: { parent: ParentProfile }) {
         </div>
         <div>
           <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 leading-tight">{parent.motherName}</div>
-          <div className="text-sm text-[#407A81] font-medium">Ibu</div>
         </div>
       </div>
 

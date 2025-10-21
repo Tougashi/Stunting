@@ -5,31 +5,22 @@ import { Layout } from '@/components';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
-import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-
-    const result = await signIn({ email, password });
-
-    if (result.success) {
+    // TODO: integrate API
+    setTimeout(() => {
+      setLoading(false);
       router.push('/');
-    } else {
-      setError(result.error || 'Terjadi kesalahan saat login');
-    }
-
-    setLoading(false);
+    }, 600);
   };
 
   return (
@@ -40,12 +31,6 @@ export default function LoginPage() {
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8" style={{ boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D' }}>
               <h1 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-2">Masuk</h1>
               <p className="text-center text-gray-600 mb-6">Silakan login untuk melanjutkan</p>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-                  {error}
-                </div>
-              )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>

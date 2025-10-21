@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ProfileButton from '../ui/ProfileButton';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface NavItem {
   label: string;
@@ -17,13 +16,9 @@ interface NavbarProps {
   className?: string;
 }
 
-const publicNavItems: NavItem[] = [
+const defaultNavItems: NavItem[] = [
   { label: 'Home', href: '/' },
-];
-
-const privateNavItems: NavItem[] = [
-  { label: 'Home', href: '/' },
-  { label: 'Orang Tua', href: '/orang-tua' }, 
+  { label: 'Orang Tua', href: '/orang-tua' },
   { label: 'Anak', href: '/anak' },
   { label: 'Scan', href: '/scan' },
   { label: 'History', href: '/history' },
@@ -31,15 +26,11 @@ const privateNavItems: NavItem[] = [
 
 const Navbar: React.FC<NavbarProps> = ({
   logo = 'Stunting',
-  navItems,
+  navItems = defaultNavItems,
   className = '',
 }) => {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, loading } = useAuth();
-  
-  // Use appropriate nav items based on auth status
-  const currentNavItems = navItems || (user ? privateNavItems : publicNavItems);
 
   const isActiveLink = (href: string) => {
     if (!pathname) return false;
@@ -73,7 +64,7 @@ const Navbar: React.FC<NavbarProps> = ({
           {/* Navigation Items */}
           <div className="hidden sm:block">
             <div className="flex space-x-8">
-              {currentNavItems.map((item, index) => (
+              {navItems.map((item, index) => (
                 <Link
                   key={index}
                   href={item.href}
@@ -89,19 +80,11 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Login Button or Profile Button - Hidden on mobile */}
+          {/* Login Button - Hidden on mobile */}
           <div className="hidden sm:flex flex-shrink-0">
-            {loading ? (
-              <div className="px-4 py-2 text-sm font-medium text-gray-500">
-                Loading...
-              </div>
-            ) : user ? (
-              <ProfileButton />
-            ) : (
-              <Link href="/login" className="px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] text-sm font-medium">
-                Login
-              </Link>
-            )}
+            <Link href="/login" className="px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] text-sm font-medium">
+              Login
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -127,7 +110,7 @@ const Navbar: React.FC<NavbarProps> = ({
         {isMobileMenuOpen && (
           <div className="sm:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 bg-[#EFFFFE] border-t border-gray-200">
-              {currentNavItems.map((item, index) => (
+              {navItems.map((item, index) => (
                 <Link
                   key={index}
                   href={item.href}
@@ -142,22 +125,12 @@ const Navbar: React.FC<NavbarProps> = ({
                 </Link>
               ))}
               
-              {/* Login/Profile in Mobile Menu */}
+              {/* Login in Mobile Menu */}
               <div className="pt-4 border-t border-gray-200">
                 <div className="px-3 py-2">
-                  {loading ? (
-                    <div className="block w-full text-center px-4 py-2 text-base font-medium text-gray-500">
-                      Loading...
-                    </div>
-                  ) : user ? (
-                    <Link href="/profile" onClick={closeMobileMenu} className="block w-full text-center px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] text-base font-medium">
-                      Profile
-                    </Link>
-                  ) : (
-                    <Link href="/login" onClick={closeMobileMenu} className="block w-full text-center px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] text-base font-medium">
-                      Login
-                    </Link>
-                  )}
+                  <Link href="/login" onClick={closeMobileMenu} className="block w-full text-center px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269] text-base font-medium">
+                    Login
+                  </Link>
                 </div>
               </div>
             </div>
