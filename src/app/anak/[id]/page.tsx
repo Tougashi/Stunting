@@ -14,6 +14,7 @@ interface ChildDetailData {
   photo: string | null;
   gender: string;
   age: number;
+  ageMonths?: number;
   nomorKK: string;
   nikAnak: string;
   tanggalLahir: string;
@@ -170,7 +171,8 @@ export default function ProfileAnakPage() {
             name: dataWithAddress.child!.nama,
             photo: dataWithAddress.child!.image_anak,
             gender: dataWithAddress.child!.gender,
-            age: dataWithAddress.child!.umur,
+            age: dataWithAddress.child!.umur_tahun || 0, // Use umur_tahun for primary age
+            ageMonths: dataWithAddress.child!.umur_bulan || 0, // Add umur_bulan for additional detail
             nomorKK: dataWithAddress.child!.no_kk,
             nikAnak: dataWithAddress.child!.nik,
             tanggalLahir: dataWithAddress.child!.tanggal_lahir || '',
@@ -215,7 +217,7 @@ export default function ProfileAnakPage() {
             return {
               id: analysis.id,
               childId: analysis.nik,
-              age: dataWithAddress.child!.umur,
+              age: dataWithAddress.child!.umur_tahun || 0,
               height: analysis.tinggi,
               weight: analysis.berat,
               status: analysis.status as 'normal' | 'beresiko' | 'stunting',
@@ -246,6 +248,7 @@ export default function ProfileAnakPage() {
     photo: null,
     gender: '',
     age: 0,
+    ageMonths: 0,
     nomorKK: '',
     nikAnak: '',
     tanggalLahir: '',
@@ -486,6 +489,10 @@ export default function ProfileAnakPage() {
                         <label className="text-xs text-gray-500 mb-1 block">Umur (tahun)</label>
                         <input type="number" defaultValue={child.age} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-sm sm:text-base" />
                       </div>
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Umur (bulan)</label>
+                        <input type="number" defaultValue={child.ageMonths || 0} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-sm sm:text-base" />
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -519,7 +526,12 @@ export default function ProfileAnakPage() {
                       </div>
                       <div>
                         <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Usia Anak</label>
-                        <p className="text-base sm:text-lg text-gray-900">{child.age}</p>
+                        <p className="text-base sm:text-lg text-gray-900">
+                          {child.age > 0 ? `${child.age} Tahun` : ''}
+                          {child.age > 0 && child.ageMonths && child.ageMonths > 0 ? ' ' : ''}
+                          {child.ageMonths && child.ageMonths > 0 ? `${child.ageMonths} Bulan` : ''}
+                          {child.age === 0 && (!child.ageMonths || child.ageMonths === 0) ? 'Baru lahir' : ''}
+                        </p>
                       </div>
                     </div>
                   </div>

@@ -4,58 +4,88 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Layout } from '@/components';
 import Link from 'next/link';
 import { FiMoreVertical, FiArrowLeft } from 'react-icons/fi';
-import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
+import { fetchParentDetailByNoKK } from '@/utils/database-clean';
+import { useParams } from 'next/navigation';
 
 export default function OrangTuaDetailPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const params = useParams();
+  const parentId = params?.id as string;
   
-  const parent = useMemo(() => ({
-    father: {
-      name: 'Mustafa',
-      nik: '002211102131223',
-      phone: '0851 1234 1234',
-      birthPlace: 'Garut',
-      birthDate: '11/02/1990',
-      image: '/image/icon/pengukuran-anak.jpg',
-    },
-    mother: {
-      name: 'Ibu Aisyah',
-      nik: '002211102131223',
-      phone: '0851 1234 1234',
-      birthPlace: 'Garut',
-      birthDate: '11/02/1999',
-      image: '/image/icon/pengukuran-anak.jpg',
-    },
-    family: {
-      kk: '002211102131223',
-      childrenCount: 2,
-    },
-    address: {
-      provinsi: 'Jawa Barat',
-      kota: 'Kota Tasikmalaya',
-      kecamatan: 'Taman Sari',
-      desa: 'Tamansjaya',
-      kodePos: '4645',
-      detail: 'Jl. Tamansjaya',
-    },
-    children: [
-      { id: '1', name: 'Emma Jhon', avatar: '/image/icon/bayi-icon.svg' },
-      { id: '2', name: 'Siti Rosidah', avatar: '/image/icon/bayi-icon.svg' },
-      { id: '3', name: 'Rehand', avatar: '/image/icon/bayi-icon.svg' },
-    ],
-  }), []);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const initialData = useMemo(() => parent, [parent]);
-  const [data, setData] = useState(initialData);
-  const [isEditing, setIsEditing] = useState(false);
+  // Load parent data from database
   useEffect(() => {
-    const edit = searchParams?.get('edit');
-    if (edit === '1' || edit === 'true') {
-      setIsEditing(true);
-    }
-  }, [searchParams]);
+    const loadParentData = async () => {
+      if (!parentId) return;
+      
+      try {
+        setLoading(true);
+        setError('');
+        
+        // parentId should be no_kk (family number)
+        const parentDetail = await fetchParentDetailByNoKK(parentId);
+        
+        if (!parentDetail) {
+          setError('Data orang tua tidak ditemukan');
+          return;
+        }
+        
+        // Transform database data to component format
+        const transformedData = {
+          father: {
+            name: parentDetail.father?.nama || 'Tidak ada',
+            nik: parentDetail.father?.nik || '',
+            phone: parentDetail.father?.no_hp || '',
+            birthPlace: parentDetail.father?.tempat_lahir || '',
+            birthDate: parentDetail.father?.tanggal_lahir || '',
+            image: parentDetail.father?.image_orangtua || '/image/icon/pengukuran-anak.jpg',
+          },
+          mother: {
+            name: parentDetail.mother?.nama || 'Tidak ada',
+            nik: parentDetail.mother?.nik || '',
+            phone: parentDetail.mother?.no_hp || '',
+            birthPlace: parentDetail.mother?.tempat_lahir || '',
+            birthDate: parentDetail.mother?.tanggal_lahir || '',
+            image: parentDetail.mother?.image_orangtua || '/image/icon/pengukuran-anak.jpg',
+          },
+          family: {
+            kk: parentDetail.family.no_kk,
+            childrenCount: parentDetail.family.childrenCount,
+          },
+          address: {
+            provinsi: parentDetail.address?.provinsi || '',
+            kota: parentDetail.address?.kota || '',
+            kecamatan: parentDetail.address?.kecamatan || '',
+            desa: parentDetail.address?.desa || '',
+            kodePos: parentDetail.address?.kode_pos || '',
+            detail: parentDetail.address?.jalan || '',
+          },
+          children: parentDetail.children.map((child: any) => ({
+            id: child.nik,
+            name: child.nama,
+            avatar: child.image_anak || '/image/icon/bayi-icon.svg',
+            gender: child.gender,
+            age: child.umur,
+            nik: child.nik
+          })),
+        };
+        
+        setData(transformedData);
+        
+      } catch (err) {
+        console.error('Error loading parent data:', err);
+        setError('Gagal memuat data orang tua');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadParentData();
+  }, [parentId]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAddChild, setShowAddChild] = useState(false);
   const [childForm, setChildForm] = useState({
@@ -65,30 +95,7 @@ export default function OrangTuaDetailPage() {
   const [childMenuOpenId, setChildMenuOpenId] = useState<string | null>(null);
   const [childDeleteId, setChildDeleteId] = useState<string | null>(null);
 
-  const update = (path: string, value: string | number) => {
-    setData((prev) => {
-      const next = { ...prev };
-      const keys = path.split('.');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let cur: Record<string, any> = next;
-      for (let i = 0; i < keys.length - 1; i++) {
-        cur[keys[i]] = { ...cur[keys[i]] };
-        cur = cur[keys[i]];
-      }
-      cur[keys[keys.length - 1]] = value;
-      return next;
-    });
-  };
 
-  const handleSave = () => {
-    console.log('Save parent data', data);
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setData(initialData);
-    setIsEditing(false);
-  };
 
   return (
     <Layout>
@@ -108,6 +115,29 @@ export default function OrangTuaDetailPage() {
             </Link>
             <div className="text-center text-2xl sm:text-3xl md:text-5xl font-semibold text-gray-700 mb-4">Profile Orang Tua</div>
 
+            {loading ? (
+              <div className="text-center py-20">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#407A81]"></div>
+                <p className="mt-4 text-gray-600">Memuat data...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-20">
+                <p className="text-red-500 mb-4">{error}</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="px-4 py-2 bg-[#407A81] text-white rounded-md hover:bg-[#326269]"
+                >
+                  Coba Lagi
+                </button>
+              </div>
+            ) : !data ? (
+              <div className="text-center py-20">
+                <p className="text-gray-500">Data tidak ditemukan</p>
+              </div>
+            ) : (
+              <>
+            
+
             {/* Detail Card */}
             <div 
               className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6"
@@ -118,7 +148,7 @@ export default function OrangTuaDetailPage() {
                   <button onClick={() => setMenuOpen(!menuOpen)} className="p-1 text-[#397789]"><FiMoreVertical /></button>
                   {menuOpen && (
                     <div className="absolute top-8 right-0 w-40 bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden z-20">
-                      <button onClick={() => { setIsEditing(true); setMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Edit</button>
+                      <button onClick={() => { router.push(`/orang-tua/edit/${parentId}`); setMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Edit</button>
                       <button onClick={() => { setMenuOpen(false); setShowDelete(true); }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50">Hapus</button>
                     </div>
                   )}
@@ -127,7 +157,6 @@ export default function OrangTuaDetailPage() {
                 {/* Father */}
                 <SectionTitle title="Identitas Ayah" />
                 <IdentityRow
-                  editing={isEditing}
                   image={data.father.image}
                   name={data.father.name}
                   nik={data.father.nik}
@@ -135,14 +164,12 @@ export default function OrangTuaDetailPage() {
                   birthPlace={data.father.birthPlace}
                   birthDate={data.father.birthDate}
                   subject="Ayah"
-                  onChange={(field, val) => update(`father.${field}`, val)}
                 />
 
                 {/* Mother */}
                 <div className="mt-4 sm:mt-6">
                   <SectionTitle title="Identitas Ibu" />
                   <IdentityRow
-                    editing={isEditing}
                     image={data.mother.image}
                     name={data.mother.name}
                     nik={data.mother.nik}
@@ -150,7 +177,6 @@ export default function OrangTuaDetailPage() {
                     birthPlace={data.mother.birthPlace}
                     birthDate={data.mother.birthDate}
                     subject="Ibu"
-                    onChange={(field, val) => update(`mother.${field}`, val)}
                   />
                 </div>
 
@@ -158,25 +184,17 @@ export default function OrangTuaDetailPage() {
                 <div className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <div className="text-base sm:text-lg font-semibold text-gray-700 mb-2">Identitas Keluarga</div>
-                    {isEditing ? (
-                  <InputField label="NIK Keluarga" value={data.family.kk} onChange={(v) => update('family.kk', v)} />
-                    ) : (
-                  <div className="mb-2">
-                    <div className="text-sm sm:text-base text-gray-500">NIK Keluarga</div>
-                    <div className="text-lg sm:text-xl font-semibold text-gray-800">{data.family.kk}</div>
-                  </div>
-                    )}
+                    <div className="mb-2">
+                      <div className="text-sm sm:text-base text-gray-500">No KK</div>
+                      <div className="text-lg sm:text-xl font-semibold text-gray-800">{data.family.kk}</div>
+                    </div>
                   </div>
                   <div>
                     <div className="h-[22px]" />
-                    {isEditing ? (
-                  <InputField label="Jumlah Anak" value={String(data.family.childrenCount)} onChange={(v) => update('family.childrenCount', Number(v))} />
-                    ) : (
-                  <div className="mb-2">
-                    <div className="text-sm sm:text-base text-gray-500">Jumlah Anak</div>
-                    <div className="text-lg sm:text-xl font-semibold text-gray-800">{`${data.family.childrenCount} Anak`}</div>
-                  </div>
-                    )}
+                    <div className="mb-2">
+                      <div className="text-sm sm:text-base text-gray-500">Jumlah Anak</div>
+                      <div className="text-lg sm:text-xl font-semibold text-gray-800">{`${data.family.childrenCount} Anak`}</div>
+                    </div>
                   </div>
                 </div>
 
@@ -184,44 +202,17 @@ export default function OrangTuaDetailPage() {
                 <div className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <SectionTitle title="Alamat Rumah" />
-                    {isEditing ? (
-                      <>
-                        <InputField label="Provinsi" value={data.address.provinsi} onChange={(v) => update('address.provinsi', v)} />
-                        <InputField label="Kecamatan" value={data.address.kecamatan} onChange={(v) => update('address.kecamatan', v)} />
-                        <InputField label="Detail Jalan" value={data.address.detail} onChange={(v) => update('address.detail', v)} />
-                      </>
-                    ) : (
-                      <>
-                        <KeyValue label="Provinsi" value={data.address.provinsi} />
-                        <KeyValue label="Kecamatan" value={data.address.kecamatan} />
-                        <KeyValue label="Detail Jalan" value={data.address.detail} />
-                      </>
-                    )}
+                    <KeyValue label="Provinsi" value={data.address.provinsi} />
+                    <KeyValue label="Kecamatan" value={data.address.kecamatan} />
+                    <KeyValue label="Detail Jalan" value={data.address.detail} />
                   </div>
                   <div>
                     <div className="h-[22px]" />
-                    {isEditing ? (
-                      <>
-                        <InputField label="Kota/Kabupaten" value={data.address.kota} onChange={(v) => update('address.kota', v)} />
-                        <InputField label="Desa" value={data.address.desa} onChange={(v) => update('address.desa', v)} />
-                        <InputField label="Kode Pos" value={data.address.kodePos} onChange={(v) => update('address.kodePos', v)} />
-                      </>
-                    ) : (
-                      <>
-                        <KeyValue label="Kota/Kabupaten" value={data.address.kota} />
-                        <KeyValue label="Desa" value={data.address.desa} />
-                        <KeyValue label="Kode Pos" value={data.address.kodePos} />
-                      </>
-                    )}
+                    <KeyValue label="Kota/Kabupaten" value={data.address.kota} />
+                    <KeyValue label="Desa" value={data.address.desa} />
+                    <KeyValue label="Kode Pos" value={data.address.kodePos} />
                   </div>
                 </div>
-
-                {isEditing && (
-                  <div className="mt-6 flex items-center justify-end gap-3">
-                    <button onClick={handleCancel} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Batal</button>
-                    <button onClick={handleSave} className="px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269]">Simpan</button>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -235,12 +226,13 @@ export default function OrangTuaDetailPage() {
                 <button onClick={() => setShowAddChild(true)} className="px-4 py-2 rounded-full bg-[#407A81] text-white text-sm hover:bg-[#326269]">Tambah Anak</button>
               </div>
               <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-3 gap-6">
-                {parent.children.map((c) => (
+                {data?.children && data.children.length > 0 ? (
+                  data.children.map((c: any) => (
                   <div
                     key={c.id}
                     className="relative rounded-md border border-gray-200 bg-white px-3 py-3 cursor-pointer hover:border-[#407A81]"
                     style={{ boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D' }}
-                    onClick={() => router.push(`/anak/${c.id}`)}
+                    onClick={() => router.push(`/anak/${c.nik}`)}
                   >
                     <button
                       className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
@@ -254,8 +246,7 @@ export default function OrangTuaDetailPage() {
                           onClick={(e) => { 
                             e.stopPropagation(); 
                             setChildMenuOpenId(null); 
-                            // TODO: Implement edit with actual child data that has NIK
-                            console.log('Edit child:', c.id); 
+                            router.push(`/anak/edit/${c.nik}`);
                           }}
                           className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
                         >
@@ -271,18 +262,47 @@ export default function OrangTuaDetailPage() {
                     )}
                     <div className="flex items-center gap-3">
                       <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        {c.avatar && c.avatar !== '/image/icon/bayi-icon.svg' ? (
+                          <img 
+                            src={c.avatar} 
+                            alt={c.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.removeAttribute('style');
+                            }}
+                          />
+                        ) : null}
+                        <svg 
+                          width="28" 
+                          height="28" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          xmlns="http://www.w3.org/2000/svg"
+                          className={c.avatar && c.avatar !== '/image/icon/bayi-icon.svg' ? 'hidden' : ''}
+                        >
                           <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
                         </svg>
                       </div>
                       <div className="min-w-0">
                         <div className="font-semibold text-gray-900 text-lg leading-tight truncate">{c.name}</div>
-                        <div className="text-xs text-[#407A81]">Laki Laki</div>
-                        <div className="text-xs text-gray-500">Umur: 2 Tahun</div>
+                        <div className="text-xs text-[#407A81]">{c.gender === 'L' ? 'Laki-laki' : 'Perempuan'}</div>
+                        <div className="text-xs text-gray-500">Umur: {c.age || 0} Tahun</div>
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-8">
+                    <div className="text-gray-400">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-3">
+                        <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="currentColor"/>
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-base">Tidak Ada Anak</p>
+                    <p className="text-gray-400 text-sm mt-1">Belum ada data anak yang terdaftar</p>
+                  </div>
+                )}
               </div>
             </div>
             {/* Child delete confirm */}
@@ -380,6 +400,8 @@ export default function OrangTuaDetailPage() {
                 </div>
               </div>
             )}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -395,7 +417,7 @@ function KeyValue({ label, value }: { label: string; value: string }) {
   return (
     <div className="mb-2">
       <div className="text-xs sm:text-[11px] text-gray-500">{label}</div>
-      <div className="text-base sm:text-sm text-gray-800">{value}</div>
+      <div className="text-base sm:text-sm text-gray-800">{value || 'Tidak ada'}</div>
     </div>
   );
 }
@@ -403,123 +425,95 @@ function KeyValue({ label, value }: { label: string; value: string }) {
 function InputField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="mb-2">
-      <div className="text-xs sm:text-[11px] text-gray-500 mb-1">{label}</div>
-      <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-base sm:text-sm" />
+      <div className="text-[11px] text-gray-500 mb-1">{label}</div>
+      <input 
+        value={value} 
+        onChange={(e) => onChange(e.target.value)} 
+        className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-sm" 
+      />
     </div>
   );
 }
 
-function IdentityRow({ editing = false, image, name, nik, phone, birthPlace, birthDate, subject, onChange }: { editing?: boolean; image: string; name: string; nik: string; phone: string; birthPlace: string; birthDate: string; subject?: 'Ayah' | 'Ibu'; onChange?: (field: string, value: string) => void; }) {
-  const cleanedName = name.replace(/^(Bapak|Ibu)\s+/i, '').trim();
+
+
+function IdentityRow({ image, name, nik, phone, birthPlace, birthDate, subject }: { image: string; name: string; nik: string; phone: string; birthPlace: string; birthDate: string; subject?: 'Ayah' | 'Ibu'; }) {
+  // Only clean name if it's not "Tidak ada"
+  const cleanedName = name === 'Tidak ada' ? name : name.replace(/^(Bapak|Ibu)\s+/i, '').trim();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-5 items-start">
       {/* Left: Photo + helper (only when editing) + phone */}
       <div>
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className={`${editing ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32'} relative rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]`}>
-            {editing && image && image.startsWith('blob:') ? (
-              <img src={image} alt={name} className="absolute inset-0 w-full h-full object-cover" />
-            ) : (
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
-              </svg>
-            )}
-          </div>
-          {/* Header beside image in view mode */}
-          {!editing && (
-            <div className="min-w-0">
-              <div className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight truncate">{subject === 'Ibu' ? 'Ibu' : 'Bapak'} {cleanedName.split(/\s+/)[0]}</div>
-              <div className="text-xs sm:text-sm text-[#397789] mt-1 truncate">No Telepon: {phone}</div>
-            </div>
-          )}
-          {editing && (
-            <div className="text-xs sm:text-[11px] text-gray-500 leading-4">
-              <div className="font-semibold">Upload Foto {subject}</div>
-              <div>Profile Picture should be in the standard</div>
-              <div>format png, jpg & no more than 2MB</div>
-            </div>
-          )}
-        </div>
-
-        {/* Upload control only when editing */}
-        {editing && (
-          <div className="mt-3">
-            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer text-sm">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const url = URL.createObjectURL(file);
-                    // update preview image
-                    if (onChange) {
-                      onChange('image', url);
-                    }
-                  }
+          <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 relative rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
+            {image && image !== '/image/icon/pengukuran-anak.jpg' ? (
+              <img 
+                src={image} 
+                alt={name} 
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.removeAttribute('style');
                 }}
               />
-              <span>Pilih Foto</span>
-            </label>
+            ) : null}
+            <svg 
+              width="36" 
+              height="36" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+              className={image && image !== '/image/icon/pengukuran-anak.jpg' ? 'hidden' : ''}
+            >
+              <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+            </svg>
           </div>
-        )}
+          {/* Header beside image */}
+          <div className="min-w-0">
+            <div className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight truncate">
+              {cleanedName === 'Tidak ada' 
+                ? `${subject === 'Ibu' ? 'Ibu' : 'Bapak'} Tidak Ada`
+                : `${subject === 'Ibu' ? 'Ibu' : 'Bapak'} ${cleanedName.split(/\s+/)[0]}`
+              }
+            </div>
+            <div className="text-xs sm:text-sm text-[#397789] mt-1 truncate">No Telepon: {phone || 'Tidak ada'}</div>
+          </div>
 
-        {editing ? (
-          <>
-            <div className="mt-3 sm:mt-4">
-              <InputField label={`Nomor Telepon ${subject}`} value={phone} onChange={(v) => onChange && onChange('phone', v)} />
-            </div>
-            <div className="mt-2">
-              <InputField label="Tempat Lahir" value={birthPlace} onChange={(v) => onChange && onChange('birthPlace', v)} />
-            </div>
-          </>
-        ) : null}
+        </div>
+
+
       </div>
 
       {/* Right / Details column (view: empty spacer) */}
       <div className="-ml-1 sm:-ml-2 md:-ml-4 lg:-ml-6">
-        {editing ? (
-          <>
-            <InputField label="Nama Lengkap" value={name} onChange={(v) => onChange && onChange('name', v)} />
-            <InputField label="NIK" value={nik} onChange={(v) => onChange && onChange('nik', v)} />
-            <div className="mb-2">
-              <div className="text-xs sm:text-[11px] text-gray-500 mb-1">Tanggal Lahir</div>
-              <input value={birthDate} onChange={(e) => onChange && onChange('birthDate', e.target.value)} className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-[#9ECAD6] focus:border-transparent text-base sm:text-sm" />
-            </div>
-          </>
-        ) : (
-          <div />
-        )}
+        <div />
       </div>
 
-      {/* Full-width details row (view mode) */}
-      {!editing && (
-        <div className="sm:col-span-2 mt-2 w-full">
-          <div className="space-y-2 sm:space-y-3">
-            <div className="flex items-start justify-between w-full">
-              <div>
-                <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Nama Lengkap</div>
-                <div className="text-base sm:text-lg font-semibold text-gray-900">{cleanedName}</div>
-              </div>
-              <div className="pl-6 text-left lg:w-[360px] xl:w-[420px]">
-                <div className="text-[11px] sm:text-xs text-gray-500 mb-1">NIK</div>
-                <div className="text-base sm:text-lg font-semibold text-gray-900">{nik}</div>
-              </div>
+      {/* Full-width details row */}
+      <div className="sm:col-span-2 mt-2 w-full">
+        <div className="space-y-2 sm:space-y-3">
+          <div className="flex items-start justify-between w-full">
+            <div>
+              <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Nama Lengkap</div>
+              <div className="text-base sm:text-lg font-semibold text-gray-900">{cleanedName}</div>
             </div>
-            <div className="flex items-start justify-between w-full">
-              <div>
-                <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Tempat Lahir</div>
-                <div className="text-base sm:text-lg font-semibold text-gray-900">{birthPlace}</div>
-              </div>
-              <div className="pl-6 text-left lg:w-[360px] xl:w-[420px]">
-                <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Tanggal Lahir</div>
-                <div className="text-base sm:text-lg font-semibold text-gray-900">{birthDate}</div>
-              </div>
+            <div className="pl-6 text-left lg:w-[360px] xl:w-[420px]">
+              <div className="text-[11px] sm:text-xs text-gray-500 mb-1">NIK</div>
+              <div className="text-base sm:text-lg font-semibold text-gray-900">{nik || 'Tidak ada'}</div>
+            </div>
+          </div>
+          <div className="flex items-start justify-between w-full">
+            <div>
+              <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Tempat Lahir</div>
+              <div className="text-base sm:text-lg font-semibold text-gray-900">{birthPlace || 'Tidak ada'}</div>
+            </div>
+            <div className="pl-6 text-left lg:w-[360px] xl:w-[420px]">
+              <div className="text-[11px] sm:text-xs text-gray-500 mb-1">Tanggal Lahir</div>
+              <div className="text-base sm:text-lg font-semibold text-gray-900">{birthDate || 'Tidak ada'}</div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

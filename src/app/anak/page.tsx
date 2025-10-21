@@ -76,7 +76,8 @@ export default function AnakPage() {
     return childrenData.map((child): Bayi => ({
       id: child.id,
       name: child.nama,
-      age: child.umur,
+      age: child.umur_tahun || 0, // Use tahun as primary age display
+      ageMonths: child.umur_bulan || 0, // Add months for additional detail
       gender: child.gender === 'L' ? 'Laki Laki' : child.gender === 'P' ? 'Perempuan' : child.gender,
       height: child.tb_lahir || 0,
       weight: child.bb_lahir || 0,
@@ -389,7 +390,14 @@ function ChildCard({ child, onClick, onOpenMenu, menuOpenId, onEdit, onDelete, c
           <div>
             <h3 className="font-semibold text-gray-900 text-sm">{child.name}</h3>
             <p className="text-xs text-[#407A81] font-medium">{child.gender}</p>
-            <p className="text-xs text-[#407A81]">Umur: <span className="text-gray-500">{child.age} Tahun</span></p>
+            <p className="text-xs text-[#407A81]">
+              Umur: <span className="text-gray-500">
+                {child.age > 0 ? `${child.age} Tahun` : ''}
+                {child.age > 0 && child.ageMonths && child.ageMonths > 0 ? ' ' : ''}
+                {child.ageMonths && child.ageMonths > 0 ? `${child.ageMonths} Bulan` : ''}
+                {child.age === 0 && (!child.ageMonths || child.ageMonths === 0) ? 'Baru lahir' : ''}
+              </span>
+            </p>
           </div>
         </div>
         

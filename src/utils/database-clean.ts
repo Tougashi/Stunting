@@ -18,7 +18,8 @@ export interface ChildData {
   tanggal_lahir: string;
   tempat_lahir: string;
   gender: string;
-  umur: number;
+  umur_tahun: number;
+  umur_bulan: number;
   bb_lahir: number;
   tb_lahir: number;
   lk_lahir: number;
@@ -182,7 +183,8 @@ export interface NewChildData {
   tanggal_lahir: string;
   tempat_lahir: string;
   gender: string;
-  umur: number;
+  umur_tahun: number;
+  umur_bulan: number;
   bb_lahir: number;
   tb_lahir: number;
   lk_lahir: number;
@@ -293,7 +295,7 @@ export const fetchParentsData = async (): Promise<ParentData[]> => {
     // Get all parents data
     const { data: parentsData, error: parentsError } = await supabase
       .from('DataOrangTua')
-      .select('nik, nama, role, no_kk')
+      .select('nik, nama, role, no_kk, image_orangtua')
       .in('role', ['ayah', 'ibu']);
       
     console.log('Raw parents data:', parentsData);
@@ -352,8 +354,8 @@ export const fetchParentsData = async (): Promise<ParentData[]> => {
         motherName: family.mother?.nama || 'Tidak ada', 
         nik: family.no_kk,
         childrenCount: family.childrenCount,
-        fatherImage: '/image/icon/pengukuran-anak.jpg',
-        motherImage: '/image/icon/pengukuran-anak.jpg',
+        fatherImage: family.father?.image_orangtua || '/image/icon/pengukuran-anak.jpg',
+        motherImage: family.mother?.image_orangtua || '/image/icon/pengukuran-anak.jpg',
         no_kk: family.no_kk,
       }));
 
@@ -396,7 +398,8 @@ export const fetchChildrenData = async (): Promise<ChildData[]> => {
       tanggal_lahir: child.tanggal_lahir,
       tempat_lahir: child.tempat_lahir,
       gender: child.gender,
-      umur: child.umur,
+      umur_tahun: child.umur_tahun || 0,
+      umur_bulan: child.umur_bulan || 0,
       bb_lahir: child.bb_lahir,
       tb_lahir: child.tb_lahir,
       lk_lahir: child.lk_lahir,
@@ -494,7 +497,8 @@ export const fetchChildDetailWithParents = async (childNik: string): Promise<{
         tanggal_lahir: childData.tanggal_lahir,
         tempat_lahir: childData.tempat_lahir,
         gender: childData.gender,
-        umur: childData.umur,
+        umur_tahun: childData.umur_tahun || 0,
+        umur_bulan: childData.umur_bulan || 0,
         bb_lahir: childData.bb_lahir,
         tb_lahir: childData.tb_lahir,
         lk_lahir: childData.lk_lahir,
@@ -526,7 +530,8 @@ export interface UpdateChildData {
   tanggal_lahir: string;
   tempat_lahir: string;
   gender: string;
-  umur: number;
+  umur_tahun: number;
+  umur_bulan: number;
   bb_lahir: number;
   tb_lahir: number;
   lk_lahir: number;
@@ -628,5 +633,541 @@ export const deleteChildImage = async (imageUrl: string): Promise<void> => {
   } catch (error) {
     console.error('❌ Error deleting child image:', error);
     // Don't throw error, just log it
+  }
+};
+
+// Interface for new parent data
+export interface NewParentData {
+  father: {
+    nik: string;
+    nama: string;
+    no_hp: string;
+    tempat_lahir: string;
+    tanggal_lahir: string;
+    role: 'ayah';
+    image_orangtua?: string | null;
+  };
+  mother: {
+    nik: string;
+    nama: string;
+    no_hp: string;
+    tempat_lahir: string;
+    tanggal_lahir: string;
+    role: 'ibu';
+    image_orangtua?: string | null;
+  };
+  family: {
+    no_kk: string;
+  };
+  address: {
+    provinsi: string;
+    kota: string;
+    kecamatan: string;
+    desa: string;
+    jalan: string;
+    kode_pos: string;
+  };
+}
+
+// Upload parent image to storage
+export const uploadParentImage = async (file: File, nik: string): Promise<string> => {
+  console.log('📤 Uploading parent image for NIK:', nik);
+  
+  try {
+    // Generate unique filename with timestamp
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${nik}-${timestamp}.${fileExtension}`;
+    const filePath = `${nik}/${fileName}`;
+    
+    console.log('📁 Upload path:', filePath);
+    
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('orang-tua')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+      
+    if (uploadError) {
+      console.error('Error uploading image:', uploadError);
+      throw uploadError;
+    }
+    
+    console.log('✅ Image uploaded successfully:', uploadData);
+    
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('orang-tua')
+      .getPublicUrl(filePath);
+      
+    console.log('🔗 Public URL:', publicUrl);
+    return publicUrl;
+    
+  } catch (error) {
+    console.error('❌ Error uploading parent image:', error);
+    throw error;
+  }
+};
+
+// Delete parent image from storage
+export const deleteParentImage = async (imageUrl: string): Promise<void> => {
+  try {
+    console.log('🗑️ Deleting parent image from storage:', imageUrl);
+    
+    if (!imageUrl) {
+      console.log('No image URL provided');
+      return;
+    }
+    
+    // Extract path from full URL
+    const pathMatch = imageUrl.match(/\/storage\/v1\/object\/public\/orang-tua\/(.+)$/);
+    
+    if (!pathMatch) {
+      console.error('Could not extract path from parent image URL:', imageUrl);
+      return;
+    }
+    
+    const imagePath = pathMatch[1];
+    console.log('📁 Extracted parent image path:', imagePath);
+    
+    // Delete from storage
+    const { error: storageError } = await supabase.storage
+      .from('orang-tua')
+      .remove([imagePath]);
+      
+    if (storageError) {
+      console.error('Error deleting parent image from storage:', storageError);
+    } else {
+      console.log('✅ Parent image deleted from storage successfully');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error deleting parent image:', error);
+  }
+};
+
+// Fetch parent detail by no_kk (family number)
+export const fetchParentDetailByNoKK = async (no_kk: string) => {
+  try {
+    console.log('🔍 Fetching parent detail for no_kk:', no_kk);
+    
+    // Get parents data
+    const { data: parentsData, error: parentsError } = await supabase
+      .from('DataOrangTua')
+      .select('*')
+      .eq('no_kk', no_kk)
+      .in('role', ['ayah', 'ibu']);
+      
+    if (parentsError) {
+      console.error('Error fetching parents data:', parentsError);
+      throw parentsError;
+    }
+    
+    if (!parentsData || parentsData.length === 0) {
+      console.log('Parents not found');
+      return null;
+    }
+    
+    console.log('✅ Parents data found:', parentsData);
+    
+    // Get address data
+    const { data: addressData, error: addressError } = await supabase
+      .from('Alamat')
+      .select('*')
+      .eq('no_kk', no_kk)
+      .single();
+      
+    if (addressError) {
+      console.error('Error fetching address data:', addressError);
+    }
+    
+    console.log('✅ Address data found:', addressData);
+    
+    // Get children data
+    const { data: childrenData, error: childrenError } = await supabase
+      .from('DataAnak')
+      .select('*')
+      .eq('no_kk', no_kk)
+      .eq('aktif', true)
+      .order('created_at', { ascending: false });
+      
+    if (childrenError) {
+      console.error('Error fetching children data:', childrenError);
+    }
+    
+    console.log('✅ Children data found:', childrenData);
+    
+    // Separate father and mother
+    const father = parentsData.find(parent => parent.role === 'ayah') || null;
+    const mother = parentsData.find(parent => parent.role === 'ibu') || null;
+    
+    const result = {
+      father,
+      mother,
+      address: addressData,
+      children: childrenData || [],
+      family: {
+        no_kk: no_kk,
+        childrenCount: childrenData ? childrenData.length : 0
+      }
+    };
+    
+    console.log('✅ Final parent detail result:', result);
+    return result;
+    
+  } catch (error) {
+    console.error('❌ Error fetching parent detail:', error);
+    throw error;
+  }
+};
+
+// Insert parent data (Family -> Parents -> Address)
+export const insertParentData = async (parentData: NewParentData, fatherImageFile?: File, motherImageFile?: File): Promise<void> => {
+  try {
+    console.log('📝 Starting parent data insertion process');
+    console.log('📋 Parent data:', parentData);
+    
+    // Step 1: Insert DataKeluarga
+    console.log('1️⃣ Inserting family data...');
+    const { error: familyError } = await supabase
+      .from('DataKeluarga')
+      .insert({
+        no_kk: parentData.family.no_kk,
+        created_at: new Date().toISOString()
+      });
+      
+    if (familyError) {
+      console.error('Error inserting family data:', familyError);
+      throw familyError;
+    }
+    console.log('✅ Family data inserted successfully');
+
+    // Step 2: Upload images if provided
+    let fatherImageUrl: string | null = null;
+    let motherImageUrl: string | null = null;
+    
+    if (fatherImageFile) {
+      try {
+        console.log('📤 Uploading father image...');
+        fatherImageUrl = await uploadParentImage(fatherImageFile, parentData.father.nik);
+        console.log('✅ Father image uploaded:', fatherImageUrl);
+      } catch (imageError) {
+        console.error('⚠️ Error uploading father image:', imageError);
+        // Continue without image
+      }
+    }
+    
+    if (motherImageFile) {
+      try {
+        console.log('📤 Uploading mother image...');
+        motherImageUrl = await uploadParentImage(motherImageFile, parentData.mother.nik);
+        console.log('✅ Mother image uploaded:', motherImageUrl);
+      } catch (imageError) {
+        console.error('⚠️ Error uploading mother image:', imageError);
+        // Continue without image
+      }
+    }
+
+    // Step 3: Insert DataOrangTua (Father and Mother)
+    console.log('2️⃣ Inserting parents data...');
+    
+    const parentsToInsert = [
+      {
+        ...parentData.father,
+        no_kk: parentData.family.no_kk,
+        image_orangtua: fatherImageUrl,
+        created_at: new Date().toISOString()
+      },
+      {
+        ...parentData.mother,
+        no_kk: parentData.family.no_kk,
+        image_orangtua: motherImageUrl,
+        created_at: new Date().toISOString()
+      }
+    ];
+    
+    const { error: parentsError } = await supabase
+      .from('DataOrangTua')
+      .insert(parentsToInsert);
+      
+    if (parentsError) {
+      console.error('Error inserting parents data:', parentsError);
+      throw parentsError;
+    }
+    console.log('✅ Parents data inserted successfully');
+
+    // Step 4: Insert Alamat
+    console.log('3️⃣ Inserting address data...');
+    const { error: addressError } = await supabase
+      .from('Alamat')
+      .insert({
+        ...parentData.address,
+        no_kk: parentData.family.no_kk,
+        created_at: new Date().toISOString()
+      });
+      
+    if (addressError) {
+      console.error('Error inserting address data:', addressError);
+      throw addressError;
+    }
+    console.log('✅ Address data inserted successfully');
+    
+    console.log('🎉 All parent data inserted successfully!');
+    
+  } catch (error) {
+    console.error('❌ Error in parent data insertion process:', error);
+    throw error;
+  }
+};
+
+// Update parent data
+export const updateParentData = async (no_kk: string, parentData: any, fatherImageFile?: File, motherImageFile?: File) => {
+  console.log('🔄 Starting parent data update process for No KK:', no_kk);
+  
+  try {
+    // Step 1: Handle image uploads if provided
+    let fatherImageUrl = parentData.father?.image;
+    let motherImageUrl = parentData.mother?.image;
+    
+    if (fatherImageFile) {
+      console.log('📤 Uploading new father image...');
+      fatherImageUrl = await uploadParentImage(fatherImageFile, parentData.father.nik);
+    }
+    
+    if (motherImageFile) {
+      console.log('📤 Uploading new mother image...');
+      motherImageUrl = await uploadParentImage(motherImageFile, parentData.mother.nik);
+    }
+
+    // Step 2: Update father data
+    console.log('1️⃣ Updating father data...');
+    const { error: fatherError } = await supabase
+      .from('DataOrangTua')
+      .update({
+        nama: parentData.father.name,
+        nik: parentData.father.nik,
+        no_hp: parentData.father.phone,
+        tempat_lahir: parentData.father.birthPlace,
+        tanggal_lahir: parentData.father.birthDate,
+        image_orangtua: fatherImageUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('no_kk', no_kk)
+      .eq('nik', parentData.father.nik);
+      
+    if (fatherError) {
+      console.error('Error updating father data:', fatherError);
+      throw fatherError;
+    }
+    console.log('✅ Father data updated successfully');
+
+    // Step 3: Update mother data
+    console.log('2️⃣ Updating mother data...');
+    const { error: motherError } = await supabase
+      .from('DataOrangTua')
+      .update({
+        nama: parentData.mother.name,
+        nik: parentData.mother.nik,
+        no_hp: parentData.mother.phone,
+        tempat_lahir: parentData.mother.birthPlace,
+        tanggal_lahir: parentData.mother.birthDate,
+        image_orangtua: motherImageUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('no_kk', no_kk)
+      .eq('nik', parentData.mother.nik);
+      
+    if (motherError) {
+      console.error('Error updating mother data:', motherError);
+      throw motherError;
+    }
+    console.log('✅ Mother data updated successfully');
+
+    // Step 4: Update family data (No KK)
+    console.log('3️⃣ Updating family data...');
+    const { error: familyError } = await supabase
+      .from('DataKeluarga')
+      .update({
+        no_kk: parentData.family.kk,
+        updated_at: new Date().toISOString()
+      })
+      .eq('no_kk', no_kk);
+      
+    if (familyError) {
+      console.error('Error updating family data:', familyError);
+      throw familyError;
+    }
+    console.log('✅ Family data updated successfully');
+
+    // Step 5: Update address data
+    console.log('4️⃣ Updating address data...');
+    const { error: addressError } = await supabase
+      .from('Alamat')
+      .update({
+        provinsi: parentData.address.provinsi,
+        kota: parentData.address.kota,
+        kecamatan: parentData.address.kecamatan,
+        desa: parentData.address.desa,
+        jalan: parentData.address.detail,
+        kode_pos: parentData.address.kodePos,
+        updated_at: new Date().toISOString()
+      })
+      .eq('no_kk', no_kk);
+      
+    if (addressError) {
+      console.error('Error updating address data:', addressError);
+      throw addressError;
+    }
+    console.log('✅ Address data updated successfully');
+    
+    console.log('🎉 All parent data updated successfully!');
+    
+  } catch (error) {
+    console.error('❌ Error in parent data update process:', error);
+    throw error;
+  }
+};
+
+// Delete analysis image from storage
+export const deleteAnalysisImage = async (imageUrl: string): Promise<void> => {
+  try {
+    console.log('🗑️ Deleting analysis image from storage:', imageUrl);
+    
+    if (!imageUrl) {
+      console.log('No analysis image URL provided');
+      return;
+    }
+    
+    // Extract path from full URL
+    // Analysis images are typically stored in 'anak' bucket under analysis folder
+    const pathMatch = imageUrl.match(/\/storage\/v1\/object\/public\/anak\/(.+)$/);
+    
+    if (!pathMatch) {
+      console.error('Could not extract path from analysis image URL:', imageUrl);
+      return;
+    }
+    
+    const imagePath = pathMatch[1];
+    console.log('📁 Extracted analysis image path:', imagePath);
+    
+    // Delete from storage
+    const { error: storageError } = await supabase.storage
+      .from('anak')
+      .remove([imagePath]);
+      
+    if (storageError) {
+      console.error('Error deleting analysis image from storage:', storageError);
+    } else {
+      console.log('✅ Analysis image deleted from storage successfully');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error deleting analysis image:', error);
+  }
+};
+
+// Delete parent data and all related data
+export const deleteParentData = async (no_kk: string) => {
+  console.log('🗑️ Starting parent data deletion process for No KK:', no_kk);
+  
+  try {
+    // Step 1: Get all related data before deletion to collect image URLs
+    console.log('1️⃣ Fetching all related data to collect image URLs...');
+    
+    // Get parent images
+    const { data: parentData, error: parentError } = await supabase
+      .from('DataOrangTua')
+      .select('image_orangtua')
+      .eq('no_kk', no_kk);
+      
+    if (parentError) {
+      console.error('Error fetching parent data:', parentError);
+    }
+    
+    // Get children images and NIKs
+    const { data: childrenData, error: childrenError } = await supabase
+      .from('DataAnak')
+      .select('image_anak, nik')
+      .eq('no_kk', no_kk);
+      
+    if (childrenError) {
+      console.error('Error fetching children data:', childrenError);
+    }
+    
+    // Get analysis images
+    const { data: analysisData, error: analysisError } = await supabase
+      .from('Analisis')
+      .select('image, nik')
+      .in('nik', 
+        childrenData?.map(child => child.nik) || []
+      );
+      
+    if (analysisError) {
+      console.error('Error fetching analysis data:', analysisError);
+    }
+
+    // Step 2: Delete all images from storage
+    console.log('2️⃣ Deleting all related images from storage...');
+    
+    // Delete parent images
+    if (parentData && parentData.length > 0) {
+      for (const parent of parentData) {
+        if (parent.image_orangtua && parent.image_orangtua !== '/image/icon/pengukuran-anak.jpg') {
+          try {
+            await deleteParentImage(parent.image_orangtua);
+          } catch (error) {
+            console.error('Error deleting parent image:', error);
+          }
+        }
+      }
+    }
+    
+    // Delete children images
+    if (childrenData && childrenData.length > 0) {
+      for (const child of childrenData) {
+        if (child.image_anak && child.image_anak !== '/image/icon/pengukuran-anak.jpg') {
+          try {
+            await deleteChildImage(child.image_anak);
+          } catch (error) {
+            console.error('Error deleting child image:', error);
+          }
+        }
+      }
+    }
+    
+    // Delete analysis images
+    if (analysisData && analysisData.length > 0) {
+      for (const analysis of analysisData) {
+        if (analysis.image) {
+          try {
+            await deleteAnalysisImage(analysis.image);
+          } catch (error) {
+            console.error('Error deleting analysis image:', error);
+          }
+        }
+      }
+    }
+
+    // Step 3: Delete database records (with CASCADE)
+    console.log('3️⃣ Deleting family data (will cascade delete all related data)...');
+    
+    const { error: deleteError } = await supabase
+      .from('DataKeluarga')
+      .delete()
+      .eq('no_kk', no_kk);
+      
+    if (deleteError) {
+      console.error('Error deleting family data:', deleteError);
+      throw deleteError;
+    }
+    
+    console.log('✅ All images and data deleted successfully!');
+    console.log('🎉 Parent deletion completed!');
+    
+  } catch (error) {
+    console.error('❌ Error in parent data deletion process:', error);
+    throw error;
   }
 };

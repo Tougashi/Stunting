@@ -4,7 +4,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components';
 import { FiFilter, FiSearch, FiMoreVertical, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
-import { fetchParentsData } from '@/utils/database-clean';
+import { fetchParentsData, deleteParentData } from '@/utils/database-clean';
 
 type ParentProfile = {
   id: string;
@@ -279,6 +279,28 @@ function ParentCard({ parent }: { parent: ParentProfile }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    try {
+      setDeleting(true);
+      console.log('🗑️ Deleting parent with No KK:', parent.nik);
+      
+      await deleteParentData(parent.nik);
+      
+      console.log('✅ Parent deleted successfully');
+      setConfirmOpen(false);
+      
+      // Refresh the page to update the list
+      window.location.reload();
+    } catch (error) {
+      console.error('❌ Error deleting parent:', error);
+      alert('Gagal menghapus data orang tua');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div 
       className="relative bg-white rounded-lg border border-gray-200 p-3 sm:p-4 hover:shadow-lg transition-all duration-200"
@@ -291,20 +313,37 @@ function ParentCard({ parent }: { parent: ParentProfile }) {
         </button>
         {open && (
           <div className="absolute right-0 top-full mt-2 w-36 sm:w-40 bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden z-20">
-            <button onClick={() => router.push(`/orang-tua/${parent.id}`)} className="w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-gray-50">Lihat Detail</button>
-            <button onClick={() => router.push(`/orang-tua/${parent.id}?edit=1`)} className="w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-gray-50">Edit</button>
+            <button onClick={() => router.push(`/orang-tua/${parent.nik}`)} className="w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-gray-50">Lihat Detail</button>
+            <button onClick={() => router.push(`/orang-tua/edit/${parent.nik}`)} className="w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-gray-50">Edit</button>
             <button onClick={() => setConfirmOpen(true)} className="w-full text-left px-3 py-2 text-xs sm:text-sm text-red-600 hover:bg-red-50">Hapus</button>
           </div>
         )}
       </div>
       {confirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmOpen(false)} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !deleting && setConfirmOpen(false)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6">
-            <div className="text-center text-base sm:text-lg font-semibold text-gray-900 mb-4">Apakah anda yakin ingin menghapusnya?</div>
+            <div className="text-center text-base sm:text-lg font-semibold text-gray-900 mb-4">
+              Apakah anda yakin ingin menghapusnya?
+            </div>
+            <div className="text-center text-sm text-gray-600 mb-6">
+              Data orang tua, alamat, dan semua anak terkait akan dihapus secara permanen.
+            </div>
             <div className="space-y-3">
-              <button onClick={() => { setConfirmOpen(false); console.log('hapus orang tua', parent.id); }} className="w-full px-4 py-2 rounded-full bg-[#407A81] text-white hover:bg-[#326269] text-sm sm:text-base">Hapus</button>
-              <button onClick={() => setConfirmOpen(false)} className="w-full px-4 py-2 rounded-full border-2 border-[#407A81] text-[#407A81] hover:bg-[#E7F5F7] text-sm sm:text-base">Batalkan</button>
+              <button 
+                onClick={handleDelete}
+                disabled={deleting}
+                className="w-full px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              >
+                {deleting ? 'Menghapus...' : 'Hapus'}
+              </button>
+              <button 
+                onClick={() => setConfirmOpen(false)}
+                disabled={deleting}
+                className="w-full px-4 py-2 rounded-full border-2 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              >
+                Batalkan
+              </button>
             </div>
           </div>
         </div>
@@ -313,7 +352,25 @@ function ParentCard({ parent }: { parent: ParentProfile }) {
       {/* Father row */}
       <div className="flex items-center gap-3 sm:gap-4">
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {parent.fatherImage && parent.fatherImage !== '/image/icon/pengukuran-anak.jpg' ? (
+            <img 
+              src={parent.fatherImage} 
+              alt={`${parent.fatherName}`}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.removeAttribute('style');
+              }}
+            />
+          ) : null}
+          <svg 
+            width="28" 
+            height="28" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            className={parent.fatherImage && parent.fatherImage !== '/image/icon/pengukuran-anak.jpg' ? 'hidden' : ''}
+          >
             <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
           </svg>
         </div>
@@ -326,7 +383,25 @@ function ParentCard({ parent }: { parent: ParentProfile }) {
       {/* Mother row */}
       <div className="flex items-center gap-3 sm:gap-4 mt-3 sm:mt-4">
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {parent.motherImage && parent.motherImage !== '/image/icon/pengukuran-anak.jpg' ? (
+            <img 
+              src={parent.motherImage} 
+              alt={`${parent.motherName}`}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.removeAttribute('style');
+              }}
+            />
+          ) : null}
+          <svg 
+            width="28" 
+            height="28" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            className={parent.motherImage && parent.motherImage !== '/image/icon/pengukuran-anak.jpg' ? 'hidden' : ''}
+          >
             <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
           </svg>
         </div>

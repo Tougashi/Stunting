@@ -145,22 +145,22 @@ function TambahAnakFormContent() {
       setSubmitError(null);
 
       // Calculate age in years based on birth date and current age input
-      const calculateAgeInYears = () => {
+      // Calculate age in years and months
+      const calculateAge = () => {
         if (formData.birthDate) {
-          const birthDate = new Date(formData.birthDate);
-          const today = new Date();
-          const ageInYears = today.getFullYear() - birthDate.getFullYear();
-          const monthDiff = today.getMonth() - birthDate.getMonth();
-          
-          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-            return ageInYears - 1;
-          }
-          return ageInYears;
+          const { months, years } = calculateAgeFromBirthDate(formData.birthDate);
+          return { years, months: months % 12 };
         }
-        // If no birth date, convert current age input to years
+        // If no birth date, use manual age input
         const currentAge = parseInt(formData.currentAge) || 0;
-        return formData.ageUnit === 'Tahun' ? currentAge : Math.floor(currentAge / 12);
+        if (formData.ageUnit === 'Tahun') {
+          return { years: currentAge, months: 0 };
+        } else {
+          return { years: Math.floor(currentAge / 12), months: currentAge % 12 };
+        }
       };
+
+      const ageData = calculateAge();
 
       // Upload image if provided
       let imageUrl = null;
@@ -182,7 +182,8 @@ function TambahAnakFormContent() {
         tanggal_lahir: formData.birthDate,
         tempat_lahir: formData.birthPlace,
         gender: formData.gender,
-        umur: calculateAgeInYears(),
+        umur_tahun: ageData.years,
+        umur_bulan: ageData.months,
         bb_lahir: parseFloat(formData.birthWeight) || 0,
         tb_lahir: parseFloat(formData.birthHeight) || 0,
         lk_lahir: parseFloat(formData.birthHeadCircumference) || 0,

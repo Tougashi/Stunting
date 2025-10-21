@@ -51,8 +51,8 @@ export default function EditChildPage() {
     nik: '',
     birthPlace: '',
     birthDate: '',
-    currentAge: '',
-    ageUnit: 'Bulan',
+    currentAgeYears: '',
+    currentAgeMonths: '',
     gender: 'L', // L = Laki-laki, P = Perempuan
     birthWeight: '',
     birthHeight: '',
@@ -73,18 +73,16 @@ export default function EditChildPage() {
           setOriginalImageUrl(data.image_anak || '');
           setChildImage(data.image_anak || '');
           
-          // Calculate current age display
+          // Calculate current age from birth date for display
           const { months, years } = calculateAgeFromBirthDate(data.tanggal_lahir);
-          const ageUnit = years >= 2 ? 'Tahun' : 'Bulan';
-          const currentAge = years >= 2 ? years : months;
           
           setFormData({
             name: data.nama || '',
             nik: data.nik || '',
             birthPlace: data.tempat_lahir || '',
             birthDate: data.tanggal_lahir || '',
-            currentAge: currentAge.toString(),
-            ageUnit: ageUnit,
+            currentAgeYears: years.toString(),
+            currentAgeMonths: (months % 12).toString(),
             gender: data.gender || 'L',
             birthWeight: data.bb_lahir?.toString() || '',
             birthHeight: data.tb_lahir?.toString() || '',
@@ -140,10 +138,21 @@ export default function EditChildPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [name]: value
+      };
+      
+      // Auto-update age when birth date changes
+      if (name === 'birthDate' && value) {
+        const { months, years } = calculateAgeFromBirthDate(value);
+        updated.currentAgeYears = years.toString();
+        updated.currentAgeMonths = (months % 12).toString();
+      }
+      
+      return updated;
+    });
   };
 
   const handleGenderSelect = (gender: string) => {
@@ -165,23 +174,19 @@ export default function EditChildPage() {
       setIsSubmitting(true);
       setSubmitError(null);
 
-      // Calculate age in years based on birth date
-      const calculateAgeInYears = () => {
+      // Calculate age in years and months based on birth date
+      const calculateAge = () => {
         if (formData.birthDate) {
-          const birthDate = new Date(formData.birthDate);
-          const today = new Date();
-          const ageInYears = today.getFullYear() - birthDate.getFullYear();
-          const monthDiff = today.getMonth() - birthDate.getMonth();
-          
-          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-            return ageInYears - 1;
-          }
-          return ageInYears;
+          const { months, years } = calculateAgeFromBirthDate(formData.birthDate);
+          return { years, months: months % 12 };
         }
-        // If no birth date, convert current age input to years
-        const currentAge = parseInt(formData.currentAge) || 0;
-        return formData.ageUnit === 'Tahun' ? currentAge : Math.floor(currentAge / 12);
+        // If no birth date, use manual age input
+        const ageYears = parseInt(formData.currentAgeYears) || 0;
+        const ageMonths = parseInt(formData.currentAgeMonths) || 0;
+        return { years: ageYears, months: ageMonths };
       };
+
+      const ageData = calculateAge();
 
       // Handle image upload/update
       let imageUrl = originalImageUrl;
@@ -212,7 +217,8 @@ export default function EditChildPage() {
         tanggal_lahir: formData.birthDate,
         tempat_lahir: formData.birthPlace,
         gender: formData.gender,
-        umur: calculateAgeInYears(),
+        umur_tahun: ageData.years,
+        umur_bulan: ageData.months,
         bb_lahir: parseFloat(formData.birthWeight) || 0,
         tb_lahir: parseFloat(formData.birthHeight) || 0,
         lk_lahir: parseFloat(formData.birthHeadCircumference) || 0,
@@ -360,16 +366,13 @@ export default function EditChildPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Tanggal Lahir
                     </label>
-                    <div className="relative">
-                      <input
-                        type="date"
-                        name="birthDate"
-                        value={formData.birthDate}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
-                      />
-                      <FiCalendar className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    </div>
+                    <input
+                      type="date"
+                      name="birthDate"
+                      value={formData.birthDate}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
+                    />
                   </div>
 
                   {/* Usia Bayi saat ini */}
@@ -377,38 +380,36 @@ export default function EditChildPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Usia Bayi saat ini
                     </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        name="currentAge"
-                        value={formData.currentAge}
-                        onChange={handleInputChange}
-                        className="w-16 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none text-center"
-                        placeholder="28"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, ageUnit: 'Bulan' }))}
-                        className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors cursor-pointer ${
-                          formData.ageUnit === 'Bulan'
-                            ? 'bg-[#407A81] text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        Bulan
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, ageUnit: 'Tahun' }))}
-                        className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors cursor-pointer ${
-                          formData.ageUnit === 'Tahun'
-                            ? 'bg-[#407A81] text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        Tahun
-                      </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Tahun</label>
+                        <input
+                          type="number"
+                          name="currentAgeYears"
+                          value={formData.currentAgeYears}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none text-center"
+                          placeholder="0"
+                          min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Bulan</label>
+                        <input
+                          type="number"
+                          name="currentAgeMonths"
+                          value={formData.currentAgeMonths}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none text-center"
+                          placeholder="0"
+                          min="0"
+                          max="11"
+                        />
+                      </div>
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Otomatis terisi dari tanggal lahir. Bisa diedit manual jika diperlukan.
+                    </p>
                   </div>
 
                   {/* Jenis Kelamin */}
