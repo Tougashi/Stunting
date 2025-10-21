@@ -43,8 +43,8 @@ function CameraPageContent() {
   // Computed classes
   const getVideoPreviewClass = () => {
     const base = 'w-full h-[600px] object-cover';
-    // Force un-mirrored preview for handphone by flipping horizontally
-    return selectedCamera === 'Camera Handphone' ? `${base} [transform:scaleX(-1)]` : base;
+    // Remove mirror effect - display video normally
+    return base;
   };
 
   // Get initial camera type from URL params
@@ -566,12 +566,8 @@ function CameraPageContent() {
         if (context && video.videoWidth > 0 && video.videoHeight > 0) {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
-          // Draw un-mirrored (video may be mirrored by CSS). Flip canvas horizontally first.
-          context.save();
-          context.translate(canvas.width, 0);
-          context.scale(-1, 1);
+          // Draw video to canvas without flipping
           context.drawImage(video, 0, 0, canvas.width, canvas.height);
-          context.restore();
           
           // Get data URL for preview
           capturedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
