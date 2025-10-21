@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components';
 import { FiArrowLeft, FiTrash2, FiHelpCircle } from 'react-icons/fi';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
+import { fetchAnalysisDetail, deleteAnalysis, AnalysisData, ChildData } from '@/utils/database-clean';
 
 // Interface for scan record
 interface ScanRecord {
@@ -23,87 +24,17 @@ interface ScanRecord {
   imageUrl: string;
 }
 
-// Mock data - in real app this would come from API/database
-const getScanRecordById = (childId: string, scanId: string) => {
-  const scanRecords: { [key: string]: ScanRecord } = {
-    'scan-1': {
-      id: 'scan-1',
-      childId: '1',
-      childName: 'Emma Jhon',
-      nik: '0291029102192',
-      age: 2,
-      ageMonths: 2,
-      gender: 'male',
-      height: 28.5,
-      weight: 1.2,
-      status: 'normal',
-      date: '2024-09-02',
-      scanTime: '10:05 WIB',
-      imageUrl: '/image/icon/pengukuran-anak.jpg'
-    },
-    'scan-2': {
-      id: 'scan-2',
-      childId: '1',
-      childName: 'Emma Jhon',
-      nik: '0291029102192',
-      age: 2,
-      ageMonths: 1,
-      gender: 'male',
-      height: 28.5,
-      weight: 1.2,
-      status: 'normal',
-      date: '2024-08-19',
-      scanTime: '10:05 WIB',
-      imageUrl: '/image/icon/pengukuran-anak.jpg'
-    },
-    'scan-3': {
-      id: 'scan-3',
-      childId: '1',
-      childName: 'Emma Jhon',
-      nik: '0291029102192',
-      age: 2,
-      ageMonths: 0,
-      gender: 'male',
-      height: 28.5,
-      weight: 1.2,
-      status: 'normal',
-      date: '2024-08-18',
-      scanTime: '14:20 WIB',
-      imageUrl: '/image/icon/pengukuran-anak.jpg'
-    },
-    'scan-4': {
-      id: 'scan-4',
-      childId: '2',
-      childName: 'Siti Rosidah',
-      nik: '0291029102193',
-      age: 3,
-      ageMonths: 0,
-      gender: 'female',
-      height: 30,
-      weight: 1.5,
-      status: 'beresiko',
-      date: '2024-08-20',
-      scanTime: '11:15 WIB',
-      imageUrl: '/image/icon/pengukuran-anak.jpg'
-    },
-    'scan-5': {
-      id: 'scan-5',
-      childId: '3',
-      childName: 'Rehand',
-      nik: '0291029102194',
-      age: 1,
-      ageMonths: 0,
-      gender: 'male',
-      height: 25,
-      weight: 1.0,
-      status: 'stunting',
-      date: '2024-08-20',
-      scanTime: '09:30 WIB',
-      imageUrl: '/image/icon/pengukuran-anak.jpg'
-    }
-  };
+// Function to construct Supabase storage URL
+const getImageUrl = (nik: string, imageName: string) => {
+  if (!imageName) return '/image/icon/pengukuran-anak.jpg';
   
-  return scanRecords[scanId];
+  // Check if imageName is already a full URL
+  if (imageName.startsWith('https://')) {
+    return imageName;
+  }
+  
+  // Otherwise, construct the URL
+  return `https://kgswlhiolxopunygghrs.supabase.co/storage/v1/object/public/pemindaian/${nik}/${imageName}`;
 };
 
 export default function HasilAnalisisPage() {
@@ -112,8 +43,96 @@ export default function HasilAnalisisPage() {
   const childId = params?.id as string;
   const scanId = params?.scanId as string;
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [record, setRecord] = useState<ScanRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const fetchAnalysisData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const data = await fetchAnalysisDetail(scanId);
+        
+        if (data && data.analysis && data.child) {
+          // Convert database data to component interface
+          const analysisTime = new Date(data.analysis.created_at);
+          const scanRecord: ScanRecord = {
+            id: data.analysis.id,
+            childId: data.child.nik,
+            childName: data.child.nama,
+            nik: data.child.nik,
+            age: data.child.umur,
+            ageMonths: 0, // We don't have months data in database
+            gender: data.child.gender,
+            height: data.analysis.tinggi,
+            weight: data.analysis.berat,
+            status: data.analysis.status as 'normal' | 'beresiko' | 'stunting',
+            date: data.analysis.tanggal_pemeriksaan,
+            scanTime: analysisTime.toLocaleTimeString('id-ID', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              timeZoneName: 'short'
+            }),
+            imageUrl: data.analysis.image ? getImageUrl(data.child.nik, data.analysis.image) : '/image/icon/pengukuran-anak.jpg'
+          };
+          
+          setRecord(scanRecord);
+        } else {
+          setError('Data analisis tidak ditemukan');
+        }
+      } catch (err) {
+        console.error('Error fetching analysis detail:', err);
+        setError('Gagal memuat data analisis');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (scanId) {
+      fetchAnalysisData();
+    }
+  }, [scanId]);
   
-  const record = scanId ? getScanRecordById(childId, scanId) : null;
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Memuat data analisis...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Terjadi Kesalahan</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => router.push(`/anak/${childId}`)} 
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Kembali ke Profile Anak
+            </button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!record) {
     return (
@@ -138,9 +157,26 @@ export default function HasilAnalisisPage() {
   };
 
   const handleDelete = () => {
-    console.log('Deleting scan record:', scanId);
-    // TODO: Implement delete functionality
-    router.push(`/anak/${childId}`);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteAnalysis(scanId);
+      console.log('Analysis deleted successfully');
+      router.push(`/anak/${childId}`);
+    } catch (error) {
+      console.error('Error deleting analysis:', error);
+      alert('Gagal menghapus data pemindaian. Silakan coba lagi.');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
   };
 
   const handleDetailLengkap = () => {
@@ -223,7 +259,7 @@ export default function HasilAnalisisPage() {
                       <div>
                         <span className="text-sm text-gray-500 font-medium mb-2 block">Jenis Kelamin</span>
                         <div className="text-lg font-medium text-gray-900">
-                          {record.gender === 'male' ? 'Laki Laki' : 'Perempuan'}
+                          {record.gender}
                         </div>
                       </div>
                     </div>
@@ -386,6 +422,46 @@ export default function HasilAnalisisPage() {
                 className="min-w-[300px] bg-[#407A81] text-white py-3 rounded-full hover:bg-[#326269] transition-colors cursor-pointer font-semibold text-lg shadow-md"
               >
                 Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={cancelDelete} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+            <h3 className="text-2xl font-bold text-center mb-6 text-gray-900">Konfirmasi Hapus</h3>
+            
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                <FiTrash2 className="w-8 h-8 text-red-500" />
+              </div>
+              <p className="text-gray-600 text-lg mb-2">
+                Apakah Anda yakin ingin menghapus hasil pemindaian ini?
+              </p>
+              <p className="text-sm text-gray-500">
+                Tindakan ini tidak dapat dibatalkan.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="w-full bg-red-500 text-white py-3 px-6 rounded-xl hover:bg-red-600 transition-colors font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+              
+              <button
+                onClick={cancelDelete}
+                disabled={isDeleting}
+                className="w-full border-2 border-gray-300 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-50 transition-colors font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Batal
               </button>
             </div>
           </div>

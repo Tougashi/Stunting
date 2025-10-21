@@ -1,71 +1,121 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components';
 import { FiArrowLeft, FiCalendar } from 'react-icons/fi';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
+import { fetchChildByNik, updateChildData, uploadChildImage, deleteChildImage, UpdateChildData } from '@/utils/database-clean';
 
-// Mock data - in real app this would come from API/database
-const getChildById = (id: string) => {
-  const children = [
-    {
-      id: '1',
-      name: 'Emma Jhon',
-      nik: '008211102131223',
-      birthPlace: 'Tasikmalaya',
-      birthDate: '2024-02-11',
-      currentAge: 28,
-      ageUnit: 'Bulan',
-      gender: 'Laki Laki',
-      childNumber: 2,
-      birthWeight: 0.5,
-      birthHeight: 30,
-      birthHeadCircumference: 15,
-      imageUrl: '/image/icon/bayi-icon.svg'
-    },
-    {
-      id: '2',
-      name: 'Siti Rosidah',
-      nik: '008211102131224',
-      birthPlace: 'Bandung',
-      birthDate: '2023-03-15',
-      currentAge: 3,
-      ageUnit: 'Tahun',
-      gender: 'Perempuan',
-      childNumber: 1,
-      birthWeight: 3.2,
-      birthHeight: 48,
-      birthHeadCircumference: 33,
-      imageUrl: '/image/icon/bayi-icon.svg'
-    }
-  ];
+// Helper function to calculate age from birth date
+const calculateAgeFromBirthDate = (birthDate: string) => {
+  if (!birthDate) return { months: 0, years: 0 };
   
-  return children.find(c => c.id === id);
+  const birth = new Date(birthDate);
+  const today = new Date();
+  
+  let months = (today.getFullYear() - birth.getFullYear()) * 12;
+  months -= birth.getMonth();
+  months += today.getMonth();
+  
+  // Adjust if the current day is before the birth day
+  if (today.getDate() < birth.getDate()) {
+    months--;
+  }
+  
+  const years = Math.floor(months / 12);
+  
+  return { months: months < 0 ? 0 : months, years };
 };
 
 export default function EditChildPage() {
   const router = useRouter();
   const params = useParams();
-  const id = params?.id as string;
+  const nik = params?.id as string; // URL parameter adalah NIK anak
   
-  const childData = id ? getChildById(id) : null;
+  // State for child data and loading
+  const [childData, setChildData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  // Image state
+  const [childImage, setChildImage] = useState<string>('');
+  const [childImageFile, setChildImageFile] = useState<File | null>(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   const [formData, setFormData] = useState({
-    name: childData?.name || '',
-    nik: childData?.nik || '',
-    birthPlace: childData?.birthPlace || '',
-    birthDate: childData?.birthDate || '',
-    currentAge: childData?.currentAge || 0,
-    ageUnit: childData?.ageUnit || 'Bulan',
-    gender: childData?.gender || 'Laki Laki',
-    childNumber: childData?.childNumber || 1,
-    birthWeight: childData?.birthWeight || 0,
-    birthHeight: childData?.birthHeight || 0,
-    birthHeadCircumference: childData?.birthHeadCircumference || 0
+    name: '',
+    nik: '',
+    birthPlace: '',
+    birthDate: '',
+    currentAge: '',
+    ageUnit: 'Bulan',
+    gender: 'L', // L = Laki-laki, P = Perempuan
+    birthWeight: '',
+    birthHeight: '',
+    birthHeadCircumference: ''
   });
+  
+  // Load child data on component mount
+  useEffect(() => {
+    const loadChildData = async () => {
+      if (!nik) return;
+      
+      try {
+        setLoading(true);
+        const data = await fetchChildByNik(nik);
+        
+        if (data) {
+          setChildData(data);
+          setOriginalImageUrl(data.image_anak || '');
+          setChildImage(data.image_anak || '');
+          
+          // Calculate current age display
+          const { months, years } = calculateAgeFromBirthDate(data.tanggal_lahir);
+          const ageUnit = years >= 2 ? 'Tahun' : 'Bulan';
+          const currentAge = years >= 2 ? years : months;
+          
+          setFormData({
+            name: data.nama || '',
+            nik: data.nik || '',
+            birthPlace: data.tempat_lahir || '',
+            birthDate: data.tanggal_lahir || '',
+            currentAge: currentAge.toString(),
+            ageUnit: ageUnit,
+            gender: data.gender || 'L',
+            birthWeight: data.bb_lahir?.toString() || '',
+            birthHeight: data.tb_lahir?.toString() || '',
+            birthHeadCircumference: data.lk_lahir?.toString() || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error loading child data:', error);
+        setSubmitError('Gagal memuat data anak');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadChildData();
+  }, [nik]);
 
+  // Loading state
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-gray-500">Loading...</div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Not found state
   if (!childData) {
     return (
       <Layout>
@@ -103,11 +153,85 @@ export default function EditChildPage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form data:', formData);
-    // TODO: Implement update functionality
-    router.push('/anak');
+    
+    if (!nik) {
+      setSubmitError('NIK anak tidak ditemukan');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+
+      // Calculate age in years based on birth date
+      const calculateAgeInYears = () => {
+        if (formData.birthDate) {
+          const birthDate = new Date(formData.birthDate);
+          const today = new Date();
+          const ageInYears = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            return ageInYears - 1;
+          }
+          return ageInYears;
+        }
+        // If no birth date, convert current age input to years
+        const currentAge = parseInt(formData.currentAge) || 0;
+        return formData.ageUnit === 'Tahun' ? currentAge : Math.floor(currentAge / 12);
+      };
+
+      // Handle image upload/update
+      let imageUrl = originalImageUrl;
+      
+      if (childImageFile && formData.nik) {
+        try {
+          console.log('Uploading new child image...');
+          
+          // Delete old image if exists and is different
+          if (originalImageUrl && originalImageUrl !== childImage) {
+            await deleteChildImage(originalImageUrl);
+          }
+          
+          // Upload new image
+          imageUrl = await uploadChildImage(childImageFile, formData.nik);
+          console.log('New image uploaded successfully:', imageUrl);
+          
+        } catch (imageError) {
+          console.error('Error handling image:', imageError);
+          // Continue without image update if upload fails
+          imageUrl = originalImageUrl;
+        }
+      }
+
+      const updateData: UpdateChildData = {
+        nik: formData.nik,
+        nama: formData.name,
+        tanggal_lahir: formData.birthDate,
+        tempat_lahir: formData.birthPlace,
+        gender: formData.gender,
+        umur: calculateAgeInYears(),
+        bb_lahir: parseFloat(formData.birthWeight) || 0,
+        tb_lahir: parseFloat(formData.birthHeight) || 0,
+        lk_lahir: parseFloat(formData.birthHeadCircumference) || 0,
+        image_anak: imageUrl
+      };
+
+      console.log('Updating child data:', updateData);
+      
+      await updateChildData(nik, updateData);
+      
+      console.log('Child data updated successfully');
+      router.push('/anak');
+      
+    } catch (error: any) {
+      console.error('Error updating child data:', error);
+      setSubmitError(error.message || 'Gagal mengupdate data anak');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -133,24 +257,49 @@ export default function EditChildPage() {
               Edit Profile Anak
             </h1>
 
+            {/* Error Message */}
+            {submitError && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">{submitError}</p>
+              </div>
+            )}
+
             {/* Profile Image */}
             <div className="flex justify-center mb-8">
               <div className="relative">
-                <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                  <Image
-                    src={childData.imageUrl}
-                    alt={formData.name}
-                    width={80}
-                    height={80}
-                  />
+                <div className="w-32 h-32 rounded-full overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
+                  {childImage ? (
+                    <img src={childImage} alt="foto anak" className="w-full h-full object-cover" />
+                  ) : (
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+                    </svg>
+                  )}
                 </div>
                 {/* Camera icon overlay */}
-                <div className="absolute bottom-0 right-0 w-10 h-10 bg-[#407A81] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#326269] transition-colors">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 w-10 h-10 bg-[#407A81] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#326269] transition-colors"
+                >
                   <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                </div>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setChildImageFile(file);
+                      setChildImage(URL.createObjectURL(file));
+                    }
+                  }}
+                />
               </div>
             </div>
 
@@ -270,9 +419,9 @@ export default function EditChildPage() {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => handleGenderSelect('Laki Laki')}
+                        onClick={() => handleGenderSelect('L')}
                         className={`py-2 px-4 rounded-lg font-medium transition-colors cursor-pointer ${
-                          formData.gender === 'Laki Laki'
+                          formData.gender === 'L'
                             ? 'bg-[#407A81] text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
@@ -281,9 +430,9 @@ export default function EditChildPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleGenderSelect('Perempuan')}
+                        onClick={() => handleGenderSelect('P')}
                         className={`py-2 px-4 rounded-lg font-medium transition-colors cursor-pointer ${
-                          formData.gender === 'Perempuan'
+                          formData.gender === 'P'
                             ? 'bg-[#407A81] text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
@@ -293,20 +442,7 @@ export default function EditChildPage() {
                     </div>
                   </div>
 
-                  {/* Anak Ke- */}
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Anak Ke-
-                    </label>
-                    <input
-                      type="number"
-                      name="childNumber"
-                      value={formData.childNumber}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
-                      placeholder="2"
-                    />
-                  </div>
+
                 </div>
               </div>
 
@@ -367,9 +503,10 @@ export default function EditChildPage() {
               <div className="flex justify-center">
                 <button
                   type="submit"
-                  className="w-full md:w-2/3 lg:w-1/2 bg-[#407A81] text-white py-4 px-8 rounded-xl hover:bg-[#326269] transition-colors font-semibold text-lg shadow-lg cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full md:w-2/3 lg:w-1/2 bg-[#407A81] text-white py-4 px-8 rounded-xl hover:bg-[#326269] transition-colors font-semibold text-lg shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Simpan
+                  {isSubmitting ? 'Menyimpan...' : 'Simpan'}
                 </button>
               </div>
             </form>

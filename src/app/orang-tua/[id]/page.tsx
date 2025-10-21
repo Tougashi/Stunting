@@ -251,7 +251,12 @@ export default function OrangTuaDetailPage() {
                     {childMenuOpenId === c.id && (
                       <div className="absolute right-2 top-8 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-20 overflow-hidden">
                         <button
-                          onClick={(e) => { e.stopPropagation(); setChildMenuOpenId(null); router.push(`/anak/edit/${c.id}`); }}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setChildMenuOpenId(null); 
+                            // TODO: Implement edit with actual child data that has NIK
+                            console.log('Edit child:', c.id); 
+                          }}
                           className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
                         >
                           Edit

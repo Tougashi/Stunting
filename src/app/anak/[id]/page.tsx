@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components';
 import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { FiArrowLeft, FiMoreVertical, FiEdit2, FiTrash2, FiClock, FiArrowRightCircle } from 'react-icons/fi';
+import { fetchChildDetailWithParents, ChildData, AddressData, AnalysisData } from '@/utils/database-clean';
 
 // Interfaces
 interface ChildDetailData {
@@ -30,6 +31,12 @@ interface ChildDetailData {
   tempatLahirIbu: string;
   tanggalLahirIbu: string;
   nomorTeleponIbu: string;
+  provinsi: string;
+  kota: string;
+  kecamatan: string;
+  desa: string;
+  jalan: string;
+  kodePos: string;
 }
 
 interface ScanHistoryRecord {
@@ -42,86 +49,6 @@ interface ScanHistoryRecord {
   date: string;
   timeAgo: string;
 }
-
-const dummyChildrenData: { [key: string]: ChildDetailData } = {
-  '1': {
-    id: '1',
-    name: 'Emma Jhon',
-    photo: '/image/icon/balita.webp',
-    gender: 'Laki Laki',
-    age: 2,
-    nomorKK: '0082110211223',
-    nikAnak: '0082110211223',
-    tanggalLahir: '11/02/2024',
-    tempatLahir: 'Tasikmalaya',
-    beratBadanLahir: '10.5 Kg',
-    tinggiBadanLahir: '30 Cm',
-    lingkarKepalaLahir: '15 Cm',
-    namaAyah: 'Mustafa',
-    nikAyah: '0082110211223',
-    tempatLahirAyah: 'Garut',
-    tanggalLahirAyah: '11/02/1999',
-    nomorTeleponAyah: '0851 6127 4323',
-    namaIbu: 'Aisyah Nur',
-    nikIbu: '0082110211223',
-    tempatLahirIbu: 'Tasikmalaya',
-    tanggalLahirIbu: '24/12/1995',
-    nomorTeleponIbu: '0851 6127 4323'
-  },
-  '2': {
-    id: '2',
-    name: 'Siti Rosidah',
-    photo: '/image/icon/balita.webp',
-    gender: 'Perempuan',
-    age: 3,
-    nomorKK: '0082110211223',
-    nikAnak: '0082110211223',
-    tanggalLahir: '11/02/2024',
-    tempatLahir: 'Tasikmalaya',
-    beratBadanLahir: '10.5 Kg',
-    tinggiBadanLahir: '30 Cm',
-    lingkarKepalaLahir: '15 Cm',
-    namaAyah: 'Mustafa',
-    nikAyah: '0082110211223',
-    tempatLahirAyah: 'Garut',
-    tanggalLahirAyah: '11/02/1999',
-    nomorTeleponAyah: '0851 6127 4323',
-    namaIbu: 'Aisyah Nur',
-    nikIbu: '0082110211223',
-    tempatLahirIbu: 'Tasikmalaya',
-    tanggalLahirIbu: '24/12/1995',
-    nomorTeleponIbu: '0851 6127 4323'
-  },
-  '3': {
-    id: '3',
-    name: 'Rehand',
-    photo: null,
-    gender: 'Laki Laki',
-    age: 1,
-    nomorKK: '0082110211223',
-    nikAnak: '0082110211223',
-    tanggalLahir: '11/02/2024',
-    tempatLahir: 'Tasikmalaya',
-    beratBadanLahir: '10.5 Kg',
-    tinggiBadanLahir: '30 Cm',
-    lingkarKepalaLahir: '15 Cm',
-    namaAyah: 'Mustafa',
-    nikAyah: '0082110211223',
-    tempatLahirAyah: 'Garut',
-    tanggalLahirAyah: '11/02/1999',
-    nomorTeleponAyah: '0851 6127 4323',
-    namaIbu: 'Aisyah Nur',
-    nikIbu: '0082110211223',
-    tempatLahirIbu: 'Tasikmalaya',
-    tanggalLahirIbu: '24/12/1995',
-    nomorTeleponIbu: '0851 6127 4323'
-  }
-};
-
-const getChildData = (id: string) => {
-  // This would typically fetch from an API
-  return dummyChildrenData[id] || dummyChildrenData['1'];
-};
 
 // Dummy scan history data
 const scanHistoryData: { [key: string]: ScanHistoryRecord[] } = {
@@ -216,10 +143,140 @@ export default function ProfileAnakPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [child, setChild] = useState<ChildDetailData | null>(null);
+  const [scanHistory, setScanHistory] = useState<ScanHistoryRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchChildDetail = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const data = await fetchChildDetailWithParents(childId);
+        
+        if (data && data.child) {
+          // Convert database data to component interface
+          const dataWithAddress = data as { 
+            child: ChildData | null; 
+            father: any; 
+            mother: any; 
+            address: AddressData | null;
+            analysisHistory: AnalysisData[]
+          };
+          const childDetailData: ChildDetailData = {
+            id: dataWithAddress.child!.nik,
+            name: dataWithAddress.child!.nama,
+            photo: dataWithAddress.child!.image_anak,
+            gender: dataWithAddress.child!.gender,
+            age: dataWithAddress.child!.umur,
+            nomorKK: dataWithAddress.child!.no_kk,
+            nikAnak: dataWithAddress.child!.nik,
+            tanggalLahir: dataWithAddress.child!.tanggal_lahir || '',
+            tempatLahir: dataWithAddress.child!.tempat_lahir || '',
+            beratBadanLahir: dataWithAddress.child!.bb_lahir?.toString() || '',
+            tinggiBadanLahir: dataWithAddress.child!.tb_lahir?.toString() || '',
+            lingkarKepalaLahir: dataWithAddress.child!.lk_lahir?.toString() || '',
+            namaAyah: dataWithAddress.father?.nama || '',
+            nikAyah: dataWithAddress.father?.nik || '',
+            tempatLahirAyah: dataWithAddress.father?.tempat_lahir || '',
+            tanggalLahirAyah: dataWithAddress.father?.tanggal_lahir || '',
+            nomorTeleponAyah: dataWithAddress.father?.no_hp || '',
+            namaIbu: dataWithAddress.mother?.nama || '',
+            nikIbu: dataWithAddress.mother?.nik || '',
+            tempatLahirIbu: dataWithAddress.mother?.tempat_lahir || '',
+            tanggalLahirIbu: dataWithAddress.mother?.tanggal_lahir || '',
+            nomorTeleponIbu: dataWithAddress.mother?.no_hp || '',
+            provinsi: dataWithAddress.address?.provinsi || '',
+            kota: dataWithAddress.address?.kota || '',
+            kecamatan: dataWithAddress.address?.kecamatan || '',
+            desa: dataWithAddress.address?.desa || '',
+            jalan: dataWithAddress.address?.jalan || '',
+            kodePos: dataWithAddress.address?.kode_pos || ''
+          };
+          
+          // Convert analysis data to scan history
+          const scanHistoryData: ScanHistoryRecord[] = dataWithAddress.analysisHistory.map((analysis) => {
+            const analysisDate = new Date(analysis.tanggal_pemeriksaan);
+            const now = new Date();
+            const timeDiff = now.getTime() - analysisDate.getTime();
+            const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+            
+            let timeAgo = '';
+            if (daysDiff === 0) {
+              timeAgo = 'Hari ini';
+            } else if (daysDiff === 1) {
+              timeAgo = '1 hari yang lalu';
+            } else {
+              timeAgo = `${daysDiff} hari yang lalu`;
+            }
+
+            return {
+              id: analysis.id,
+              childId: analysis.nik,
+              age: dataWithAddress.child!.umur,
+              height: analysis.tinggi,
+              weight: analysis.berat,
+              status: analysis.status as 'normal' | 'beresiko' | 'stunting',
+              date: analysis.tanggal_pemeriksaan,
+              timeAgo: timeAgo
+            };
+          });
+          
+          setChild(childDetailData);
+          setScanHistory(scanHistoryData);
+        } else {
+          setError('Data anak tidak ditemukan');
+        }
+      } catch (err) {
+        console.error('Error fetching child detail:', err);
+        setError('Gagal memuat data anak');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChildDetail();
+  }, [childId]);
   
-  const child = getChildData(childId);
-  const scanHistory = getChildScanHistory(childId);
-  const [form, setForm] = useState<ChildDetailData>(child);
+  const [form, setForm] = useState<ChildDetailData>(child || {
+    id: '',
+    name: '',
+    photo: null,
+    gender: '',
+    age: 0,
+    nomorKK: '',
+    nikAnak: '',
+    tanggalLahir: '',
+    tempatLahir: '',
+    beratBadanLahir: '',
+    tinggiBadanLahir: '',
+    lingkarKepalaLahir: '',
+    namaAyah: '',
+    nikAyah: '',
+    tempatLahirAyah: '',
+    tanggalLahirAyah: '',
+    nomorTeleponAyah: '',
+    namaIbu: '',
+    nikIbu: '',
+    tempatLahirIbu: '',
+    tanggalLahirIbu: '',
+    nomorTeleponIbu: '',
+    provinsi: '',
+    kota: '',
+    kecamatan: '',
+    desa: '',
+    jalan: '',
+    kodePos: ''
+  });
+
+  // Update form when child data is loaded
+  useEffect(() => {
+    if (child) {
+      setForm(child);
+    }
+  }, [child]);
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -241,7 +298,8 @@ export default function ProfileAnakPage() {
 
   const handleEdit = () => {
     setShowDropdown(false);
-    setIsEditing(true);
+    // Navigate to edit page using child's NIK
+    router.push(`/anak/edit/${child?.nikAnak}`);
   };
 
   const handleDelete = () => {
@@ -263,6 +321,59 @@ export default function ProfileAnakPage() {
   const handleViewScanDetail = (scanId: string) => {
     router.push(`/anak/${childId}/hasil/${scanId}`);
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Memuat data anak...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Terjadi Kesalahan</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Coba Lagi
+            </button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show not found state
+  if (!child) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Data Tidak Ditemukan</h2>
+            <p className="text-gray-600">Data anak dengan ID tersebut tidak ditemukan.</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -380,21 +491,16 @@ export default function ProfileAnakPage() {
                     <>
                       <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1 sm:mb-2 text-center">{form.name}</h3>
                       <p className="text-base sm:text-lg text-gray-600">{form.gender}</p>
-                      <p className="text-base sm:text-lg text-gray-600">Umur : {form.age} tahun</p>
+                      <p className="text-base sm:text-lg text-gray-600 font-semibold">Nomor KK: {child.nomorKK}</p>
                     </>
                   )}
                 </div>
 
                 {/* Information Sections */}
                 <div className="space-y-8 sm:space-y-10">
-                  {/* Nomor Kartu Keluarga Section */}
                   <div>
-                    <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-5">Nomor Kartu Keluarga</h4>
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-5">Data Anak</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
-                      <div>
-                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Nomor KK</label>
-                        <p className="text-base sm:text-lg text-gray-900">{child.nomorKK}</p>
-                      </div>
                       <div>
                         <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">NIK Anak</label>
                         <p className="text-base sm:text-lg text-gray-900">{child.nikAnak}</p>
@@ -407,12 +513,12 @@ export default function ProfileAnakPage() {
                         <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Tanggal Lahir</label>
                         <p className="text-base sm:text-lg text-gray-900">{child.tanggalLahir}</p>
                       </div>
-                      <div className="col-span-2">
+                      <div className="">
                         <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Tempat Lahir</label>
                         <p className="text-base sm:text-lg text-gray-900">{child.tempatLahir}</p>
                       </div>
                       <div>
-                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Usia Ibu</label>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Usia Anak</label>
                         <p className="text-base sm:text-lg text-gray-900">{child.age}</p>
                       </div>
                     </div>
@@ -499,6 +605,37 @@ export default function ProfileAnakPage() {
                       <div className="col-span-2">
                         <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Nomor Telepon Ibu</label>
                         <p className="text-base sm:text-lg text-gray-900">{child.nomorTeleponIbu}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Informasi Alamat */}
+                  <div className="pt-6 sm:pt-8 border-t border-gray-200">
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-5">Informasi Alamat</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
+                      <div>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Provinsi</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.provinsi || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Kota</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.kota || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Kecamatan</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.kecamatan || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Desa</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.desa || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Jalan</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.jalan || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm sm:text-base text-gray-500 font-medium block mb-1.5 sm:mb-2">Kode Pos</label>
+                        <p className="text-base sm:text-lg text-gray-900">{child.kodePos || '-'}</p>
                       </div>
                     </div>
                   </div>

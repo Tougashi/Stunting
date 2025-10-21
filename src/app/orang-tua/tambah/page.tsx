@@ -49,6 +49,12 @@ export default function TambahOrangTuaPage() {
 
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6" style={{ boxShadow: '0px 1px 3px 1px #00000026, 0px 1px 2px 0px #0000004D' }}>
               <div className="p-5 sm:p-6">
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <div className="text-xs font-semibold text-gray-600 mb-2">Identitas Keluarga</div>
+                    <Input label="Nomor Kartu Keluarga" placeholder="Masukkan Nomor KK" value={form.family.kk} onChange={(v) => update('family', 'kk', v)} />
+                  </div>
+                </div>
                 <div className="text-xs font-semibold text-gray-600 mb-2">Identitas Ayah</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <div>
@@ -122,17 +128,6 @@ export default function TambahOrangTuaPage() {
                     <Input label="Nama Lengkap" placeholder="Masukkan Nama Ibu" value={form.mother.name} onChange={(v) => update('mother', 'name', v)} />
                     <Input label="NIK" placeholder="Masukkan NIK Ibu" value={form.mother.nik} onChange={(v) => update('mother', 'nik', v)} />
                     <Input label="Tanggal Lahir" placeholder="dd/mm/yyyy" value={form.mother.birthDate} onChange={(v) => update('mother', 'birthDate', v)} />
-                  </div>
-                </div>
-
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <div className="text-xs font-semibold text-gray-600 mb-2">Identitas Keluarga</div>
-                    <Input label="Nomor Kartu Keluarga" placeholder="Masukkan Nomor KK" value={form.family.kk} onChange={(v) => update('family', 'kk', v)} />
-                  </div>
-                  <div>
-                    <div className="h-[22px]" />
-                    <Input label="Jumlah Anak" placeholder="Masukkan Jumlah Anak" value={form.family.childrenCount} onChange={(v) => update('family', 'childrenCount', v)} />
                   </div>
                 </div>
 

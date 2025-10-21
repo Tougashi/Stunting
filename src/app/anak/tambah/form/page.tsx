@@ -4,31 +4,120 @@ import React, { useState, Suspense, useRef } from 'react';
 import { Layout } from '@/components';
 import { FiArrowLeft } from 'react-icons/fi';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { insertChildData, uploadChildImage, NewChildData } from '@/utils/database-clean';
 
 function TambahAnakFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const parentId = searchParams?.get('parentId');
+  const no_kk = searchParams?.get('no_kk');
+  const fatherName = searchParams?.get('fatherName');
+  const motherName = searchParams?.get('motherName');
 
   const [formData, setFormData] = useState({
     name: '',
     nik: '',
     birthPlace: '',
     birthDate: '',
-    currentAge: 0,
+    currentAge: '',
     ageUnit: 'Bulan',
-    gender: 'Laki Laki',
-    childNumber: 1,
-    birthWeight: 0,
-    birthHeight: 0,
-    birthHeadCircumference: 0
+    gender: 'L', // L = Laki-laki, P = Perempuan
+    birthWeight: '',
+    birthHeight: '',
+    birthHeadCircumference: ''
   });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isManualAge, setIsManualAge] = useState(false); // Track if user wants manual age input
+
+  // Function to calculate age from birth date
+  const calculateAgeFromBirthDate = (birthDate: string) => {
+    if (!birthDate) return { months: 0, years: 0 };
+    
+    const birth = new Date(birthDate);
+    const today = new Date();
+    
+    let months = (today.getFullYear() - birth.getFullYear()) * 12;
+    months -= birth.getMonth();
+    months += today.getMonth();
+    
+    // Adjust if the current day is before the birth day
+    if (today.getDate() < birth.getDate()) {
+      months--;
+    }
+    
+    const years = Math.floor(months / 12);
+    const remainingMonths = months % 12;
+    
+    return { months: months < 0 ? 0 : months, years };
+  };
+
+  // Auto-calculate age when birth date changes
+  const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const birthDate = e.target.value;
+    console.log('🎂 Birth date changed to:', birthDate);
+    console.log('🔄 Current state - isManualAge:', isManualAge, 'currentAge:', formData.currentAge);
+    
+    if (birthDate && !isManualAge) {
+      console.log('🤖 Auto-calculating age from birth date');
+      const { months, years } = calculateAgeFromBirthDate(birthDate);
+      console.log('📊 Calculated age - months:', months, 'years:', years);
+      
+      // Set age based on what makes more sense (under 2 years = months, over 2 years = years)
+      if (years < 2) {
+        console.log('👶 Setting age to', months, 'months');
+        setFormData(prev => ({ 
+          ...prev, 
+          birthDate,
+          currentAge: months.toString(), 
+          ageUnit: 'Bulan' 
+        }));
+      } else {
+        console.log('🧒 Setting age to', years, 'years');
+        setFormData(prev => ({ 
+          ...prev, 
+          birthDate,
+          currentAge: years.toString(), 
+          ageUnit: 'Tahun' 
+        }));
+      }
+    } else {
+      console.log('� Manual mode or no birth date - just updating birth date');
+      // Just update birth date without changing age
+      setFormData(prev => ({ ...prev, birthDate }));
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    
+    // If user manually changes age, enable manual mode
+    if (name === 'currentAge') {
+      console.log('🖱️ User manually changing age to:', value);
+      setIsManualAge(true);
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  // Separate handler for age input to prevent conflicts
+  const handleAgeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    console.log('🔢 Age input changed to:', value, 'isManualAge:', isManualAge);
+    
+    // Only set manual mode if user actually types (not from auto-calculation)
+    if (!isManualAge) {
+      console.log('⚠️ Age changed but not setting manual mode (auto-calculation)');
+    } else {
+      console.log('✋ User manually changing age');
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      currentAge: value
     }));
   };
 
@@ -40,13 +129,80 @@ function TambahAnakFormContent() {
   };
 
   const [childImage, setChildImage] = useState<string>('');
+  const [childImageFile, setChildImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Submitting data:', { ...formData, parentId });
-    // TODO: Implement save functionality
-    router.push('/anak');
+    
+    if (!no_kk) {
+      setSubmitError('Data orang tua tidak ditemukan');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+
+      // Calculate age in years based on birth date and current age input
+      const calculateAgeInYears = () => {
+        if (formData.birthDate) {
+          const birthDate = new Date(formData.birthDate);
+          const today = new Date();
+          const ageInYears = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            return ageInYears - 1;
+          }
+          return ageInYears;
+        }
+        // If no birth date, convert current age input to years
+        const currentAge = parseInt(formData.currentAge) || 0;
+        return formData.ageUnit === 'Tahun' ? currentAge : Math.floor(currentAge / 12);
+      };
+
+      // Upload image if provided
+      let imageUrl = null;
+      if (childImageFile && formData.nik) {
+        try {
+          console.log('Uploading child image...');
+          imageUrl = await uploadChildImage(childImageFile, formData.nik);
+          console.log('Image uploaded successfully:', imageUrl);
+        } catch (imageError) {
+          console.error('Error uploading image:', imageError);
+          // Continue without image if upload fails
+        }
+      }
+
+      const childData: NewChildData = {
+        nik: formData.nik,
+        no_kk: no_kk,
+        nama: formData.name,
+        tanggal_lahir: formData.birthDate,
+        tempat_lahir: formData.birthPlace,
+        gender: formData.gender,
+        umur: calculateAgeInYears(),
+        bb_lahir: parseFloat(formData.birthWeight) || 0,
+        tb_lahir: parseFloat(formData.birthHeight) || 0,
+        lk_lahir: parseFloat(formData.birthHeadCircumference) || 0,
+        image_anak: imageUrl,
+        aktif: true
+      };
+
+      console.log('Submitting child data:', childData);
+      
+      await insertChildData(childData);
+      
+      console.log('Child data saved successfully');
+      router.push('/anak');
+      
+    } catch (error: any) {
+      console.error('Error saving child data:', error);
+      setSubmitError(error.message || 'Gagal menyimpan data anak');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleBack = () => {
@@ -72,9 +228,27 @@ function TambahAnakFormContent() {
           {/* Content Card */}
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden p-8">
             {/* Title */}
-            <h1 className="text-3xl font-bold text-center text-gray-900 mb-8">
+            <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
               Tambah Anak
             </h1>
+            
+            {/* Parent Info */}
+            {fatherName && motherName && (
+              <div className="text-center mb-6 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-2">Orang Tua yang Dipilih:</p>
+                <p className="font-semibold text-gray-900">
+                  {decodeURIComponent(fatherName)} & {decodeURIComponent(motherName)}
+                </p>
+                <p className="text-sm text-gray-500">No. KK: {no_kk}</p>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {submitError && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">{submitError}</p>
+              </div>
+            )}
 
             {/* Profile Image */}
             <div className="flex justify-center mb-8">
@@ -106,7 +280,10 @@ function TambahAnakFormContent() {
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) setChildImage(URL.createObjectURL(file));
+                    if (file) {
+                      setChildImageFile(file);
+                      setChildImage(URL.createObjectURL(file));
+                    }
                   }}
                 />
               </div>
@@ -174,7 +351,7 @@ function TambahAnakFormContent() {
                         type="date"
                         name="birthDate"
                         value={formData.birthDate}
-                        onChange={handleInputChange}
+                        onChange={handleBirthDateChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
                       />
                     </div>
@@ -184,19 +361,49 @@ function TambahAnakFormContent() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Usia Bayi saat ini
+                      {formData.birthDate && !isManualAge && (
+                        <span className="text-xs text-green-600 ml-2">(Otomatis dari tanggal lahir)</span>
+                      )}
+                      {isManualAge && (
+                        <span className="text-xs text-blue-600 ml-2">(Input manual)</span>
+                      )}
                     </label>
                     <div className="flex gap-2">
                       <input
                         type="number"
                         name="currentAge"
                         value={formData.currentAge}
-                        onChange={handleInputChange}
-                        className="w-16 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none text-center"
-                        placeholder="28"
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          console.log('🔢 Manual age input:', value);
+                          console.log('🔍 Before manual input - isManualAge:', isManualAge);
+                          
+                          // Only mark as manual if user actually types (not from programmatic update)
+                          if (e.nativeEvent && e.nativeEvent.isTrusted) {
+                            console.log('✋ User manually typing age');
+                            setIsManualAge(true);
+                          }
+                          
+                          setFormData(prev => ({
+                            ...prev,
+                            currentAge: value
+                          }));
+                        }}
+                        className="w-20 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none text-center"
+                        placeholder="0"
                       />
                       <button
                         type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, ageUnit: 'Bulan' }))}
+                        onClick={() => {
+                          if (formData.birthDate && !isManualAge) {
+                            // Recalculate age in months from birth date
+                            const { months } = calculateAgeFromBirthDate(formData.birthDate);
+                            setFormData(prev => ({ ...prev, currentAge: months.toString(), ageUnit: 'Bulan' }));
+                          } else {
+                            // Just change unit without recalculating
+                            setFormData(prev => ({ ...prev, ageUnit: 'Bulan' }));
+                          }
+                        }}
                         className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors cursor-pointer ${
                           formData.ageUnit === 'Bulan'
                             ? 'bg-[#407A81] text-white'
@@ -207,7 +414,16 @@ function TambahAnakFormContent() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, ageUnit: 'Tahun' }))}
+                        onClick={() => {
+                          if (formData.birthDate && !isManualAge) {
+                            // Recalculate age in years from birth date
+                            const { years } = calculateAgeFromBirthDate(formData.birthDate);
+                            setFormData(prev => ({ ...prev, currentAge: years.toString(), ageUnit: 'Tahun' }));
+                          } else {
+                            // Just change unit without recalculating
+                            setFormData(prev => ({ ...prev, ageUnit: 'Tahun' }));
+                          }
+                        }}
                         className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors cursor-pointer ${
                           formData.ageUnit === 'Tahun'
                             ? 'bg-[#407A81] text-white'
@@ -217,6 +433,32 @@ function TambahAnakFormContent() {
                         Tahun
                       </button>
                     </div>
+                    
+                    {/* Toggle button untuk mode manual/otomatis */}
+                    {formData.birthDate && (
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newIsManualAge = !isManualAge;
+                            setIsManualAge(newIsManualAge);
+                            
+                            if (!newIsManualAge && formData.birthDate) {
+                              // Switch back to auto mode - recalculate age from birth date
+                              const { months, years } = calculateAgeFromBirthDate(formData.birthDate);
+                              if (formData.ageUnit === 'Bulan') {
+                                setFormData(prev => ({ ...prev, currentAge: months.toString() }));
+                              } else {
+                                setFormData(prev => ({ ...prev, currentAge: years.toString() }));
+                              }
+                            }
+                          }}
+                          className="text-xs text-[#407A81] hover:text-[#326269] underline"
+                        >
+                          {isManualAge ? 'Kembali ke perhitungan otomatis' : 'Input manual'}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Jenis Kelamin */}
@@ -227,9 +469,9 @@ function TambahAnakFormContent() {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => handleGenderSelect('Laki Laki')}
+                        onClick={() => handleGenderSelect('L')}
                         className={`py-2 px-4 rounded-lg font-medium transition-colors cursor-pointer ${
-                          formData.gender === 'Laki Laki'
+                          formData.gender === 'L'
                             ? 'bg-[#407A81] text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
@@ -238,9 +480,9 @@ function TambahAnakFormContent() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleGenderSelect('Perempuan')}
+                        onClick={() => handleGenderSelect('P')}
                         className={`py-2 px-4 rounded-lg font-medium transition-colors cursor-pointer ${
-                          formData.gender === 'Perempuan'
+                          formData.gender === 'P'
                             ? 'bg-[#407A81] text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
@@ -248,21 +490,6 @@ function TambahAnakFormContent() {
                         Perempuan
                       </button>
                     </div>
-                  </div>
-
-                  {/* Anak Ke- */}
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Anak Ke-
-                    </label>
-                    <input
-                      type="number"
-                      name="childNumber"
-                      value={formData.childNumber}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
-                      placeholder="2"
-                    />
                   </div>
                 </div>
               </div>
@@ -324,9 +551,10 @@ function TambahAnakFormContent() {
               <div className="flex justify-center">
                 <button
                   type="submit"
-                  className="w-full md:w-2/3 lg:w-1/2 bg-[#407A81] text-white py-4 px-8 rounded-xl hover:bg-[#326269] transition-colors font-semibold text-lg shadow-lg cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full md:w-2/3 lg:w-1/2 bg-[#407A81] text-white py-4 px-8 rounded-xl hover:bg-[#326269] transition-colors font-semibold text-lg shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Simpan
+                  {isSubmitting ? 'Menyimpan...' : 'Simpan'}
                 </button>
               </div>
             </form>

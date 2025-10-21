@@ -5,72 +5,9 @@ import { Layout } from '@/components';
 import { Bayi } from '@/types/bayi';
 import { useRouter } from 'next/navigation';
 import { FiMoreVertical, FiFilter, FiSearch } from 'react-icons/fi';
+import { fetchChildrenData, ChildData } from '@/utils/database-clean';
 
-// Data dummy untuk demo
-const dummyChildren: Bayi[] = [
-  {
-    id: '1',
-    name: 'Emma Jhon',
-    age: 2,
-    gender: 'Laki Laki',
-    height: 85,
-    weight: 12,
-    status: 'normal',
-    created_at: '2024-09-23'
-  },
-  {
-    id: '2',
-    name: 'Siti Rosidah',
-    age: 3,
-    gender: 'Perempuan',
-    height: 90,
-    weight: 14,
-    status: 'beresiko',
-    created_at: '2024-09-23'
-  },
-  {
-    id: '3',
-    name: 'Rehand',
-    age: 1,
-    gender: 'Laki Laki',
-    height: 75,
-    weight: 9,
-    status: 'stunting',
-    created_at: '2024-09-23'
-  },
-  {
-    id: '4',
-    name: 'Emma Jhon',
-    age: 2,
-    gender: 'Laki Laki',
-    height: 85,
-    weight: 12,
-    status: 'normal',
-    created_at: '2024-09-23'
-  },
-  {
-    id: '5',
-    name: 'Siti Rosidah',
-    age: 3,
-    gender: 'Perempuan',
-    height: 90,
-    weight: 14,
-    status: 'beresiko',
-    created_at: '2024-09-23'
-  },
-  {
-    id: '6',
-    name: 'Rehand',
-    age: 1,
-    gender: 'Laki Laki',
-    height: 75,
-    weight: 9,
-    status: 'stunting',
-    created_at: '2024-09-23'
-  }
-];
-
-export default function ScanPage() {
+export default function AnakPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('latest');
@@ -79,7 +16,29 @@ export default function ScanPage() {
   const [selectedChild, setSelectedChild] = useState<Bayi | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [childrenData, setChildrenData] = useState<ChildData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
+
+  // Fetch children data on component mount
+  useEffect(() => {
+    const loadChildrenData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchChildrenData();
+        setChildrenData(data);
+      } catch (err) {
+        console.error('Error loading children data:', err);
+        setError('Gagal memuat data anak. Silakan coba lagi.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadChildrenData();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -112,14 +71,29 @@ export default function ScanPage() {
     router.push(`/camera?camera=${cameraParam}&child=${childParam}`);
   };
 
+  // Convert database data to Bayi format for compatibility
+  const convertedChildren = useMemo(() => {
+    return childrenData.map((child): Bayi => ({
+      id: child.id,
+      name: child.nama,
+      age: child.umur,
+      gender: child.gender === 'L' ? 'Laki Laki' : child.gender === 'P' ? 'Perempuan' : child.gender,
+      height: child.tb_lahir || 0,
+      weight: child.bb_lahir || 0,
+      status: 'normal', // Default status since we don't have classification yet
+      created_at: child.created_at,
+      tanggal_lahir: child.tanggal_lahir
+    }));
+  }, [childrenData]);
+
   const filteredAndSortedChildren = useMemo(() => {
-    const filtered = dummyChildren.filter(child => {
+    const filtered = convertedChildren.filter((child: Bayi) => {
       const matchesSearch = child.name.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesSearch;
     });
 
     // Sort data
-    filtered.sort((a, b) => {
+    filtered.sort((a: Bayi, b: Bayi) => {
       switch (sortOption) {
         case 'az':
           return a.name.localeCompare(b.name);
@@ -134,7 +108,7 @@ export default function ScanPage() {
     });
 
     return filtered;
-  }, [searchTerm, sortOption]);
+  }, [convertedChildren, searchTerm, sortOption]);
 
   return (
     <Layout>
@@ -242,15 +216,60 @@ export default function ScanPage() {
                 </div>
               </div>
 
+              {/* Loading State */}
+              {loading && (
+                <div className="text-center py-12">
+                  <div className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-[#407A81] transition ease-in-out duration-150">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Memuat data anak...
+                  </div>
+                </div>
+              )}
+
+              {/* Error State */}
+              {error && (
+                <div className="text-center py-8">
+                  <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                    <p className="text-red-800">{error}</p>
+                    <button 
+                      onClick={() => window.location.reload()} 
+                      className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                    >
+                      Coba Lagi
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Grid Card Layout */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredAndSortedChildren.map((child) => (
-                  <ChildCard key={child.id} child={child} onClick={handleChildClick} onOpenMenu={(id) => setMenuOpenId(menuOpenId === id ? null : id)} menuOpenId={menuOpenId} onEdit={(id) => { setMenuOpenId(null); router.push(`/anak/edit/${id}`); }} onDelete={(id) => { setMenuOpenId(null); setDeleteId(id); }} />
-                ))}
-              </div>
+              {!loading && !error && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredAndSortedChildren.map((child: Bayi) => (
+                    <ChildCard 
+                      key={child.id} 
+                      child={child} 
+                      onClick={handleChildClick} 
+                      onOpenMenu={(id: string) => setMenuOpenId(menuOpenId === id ? null : id)} 
+                      menuOpenId={menuOpenId} 
+                      onEdit={(id: string) => { 
+                        const childData = childrenData.find(c => c.id === id);
+                        if (childData) {
+                          setMenuOpenId(null); 
+                          router.push(`/anak/edit/${childData.nik}`); 
+                        }
+                      }} 
+                      onDelete={(id: string) => { setMenuOpenId(null); setDeleteId(id); }}
+                      childImage={childrenData.find(c => c.id === child.id)?.image_anak}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* No Results */}
-              {filteredAndSortedChildren.length === 0 && (
+              {!loading && !error && filteredAndSortedChildren.length === 0 && (
                 <div className="text-center py-8">
                   <p className="text-gray-500">Tidak ada data anak yang ditemukan</p>
                 </div>
@@ -335,9 +354,10 @@ interface ChildCardProps {
   menuOpenId: string | null;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  childImage?: string | null;
 }
 
-function ChildCard({ child, onClick, onOpenMenu, menuOpenId, onEdit, onDelete }: ChildCardProps) {
+function ChildCard({ child, onClick, onOpenMenu, menuOpenId, onEdit, onDelete, childImage }: ChildCardProps) {
   return (
     <div 
       onClick={() => onClick(child)}
@@ -350,12 +370,19 @@ function ChildCard({ child, onClick, onOpenMenu, menuOpenId, onEdit, onDelete }:
         <div className="flex items-center gap-3">
           {/* Avatar */}
           <div className="relative">
-             {/* avatar */}
-             <div className="w-10 h-10 rounded-full bg-[#E5F3F5] flex items-center justify-center text-[#397789] shrink-0">
+            {childImage ? (
+              <img 
+                src={childImage} 
+                alt={child.name}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-[#E5F3F5] flex items-center justify-center text-[#397789] shrink-0">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
                 </svg>
               </div>
+            )}
           </div>
           
           {/* Info */}
