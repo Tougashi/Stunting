@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from '@/components';
 import Link from 'next/link';
 import { FiMoreVertical, FiArrowLeft } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
-import { fetchParentDetailByNoKK } from '@/utils/database-clean';
+import { fetchParentDetailByNoKK, insertChildData, uploadChildImage, NewChildData } from '@/utils/database-clean';
 import { useParams } from 'next/navigation';
 
 // Helper function to format age display
@@ -102,14 +102,222 @@ export default function OrangTuaDetailPage() {
 
     loadParentData();
   }, [parentId]);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAddChild, setShowAddChild] = useState(false);
   const [childForm, setChildForm] = useState({
-    name: '', nik: '', tempat: '', tgl: '', age: '', unit: 'bulan', order: '', gender: 'L', berat: '', tinggi: '', lingkar: '', photo: '' as string | null,
+    name: '',
+    nik: '',
+    birthPlace: '',
+    birthDate: '',
+    currentAge: '',
+    ageUnit: 'Bulan',
+    gender: 'L',
+    birthWeight: '',
+    birthHeight: '',
+    birthHeadCircumference: '',
+    photo: null as string | null,
   });
+  const [childImageFile, setChildImageFile] = useState<File | null>(null);
+  const [isSubmittingChild, setIsSubmittingChild] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isManualAge, setIsManualAge] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showDelete, setShowDelete] = useState(false);
   const [childMenuOpenId, setChildMenuOpenId] = useState<string | null>(null);
   const [childDeleteId, setChildDeleteId] = useState<string | null>(null);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showAddChild) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showAddChild]);
+
+  // Function to calculate age from birth date
+  const calculateAgeFromBirthDate = (birthDate: string) => {
+    if (!birthDate) return { months: 0, years: 0 };
+    
+    const birth = new Date(birthDate);
+    const today = new Date();
+    
+    let months = (today.getFullYear() - birth.getFullYear()) * 12;
+    months -= birth.getMonth();
+    months += today.getMonth();
+    
+    if (today.getDate() < birth.getDate()) {
+      months--;
+    }
+    
+    const years = Math.floor(months / 12);
+    
+    return { months: months < 0 ? 0 : months, years };
+  };
+
+  // Handle birth date change with auto-calculation
+  const handleChildBirthDateChange = (birthDate: string) => {
+    if (birthDate && !isManualAge) {
+      const { months, years } = calculateAgeFromBirthDate(birthDate);
+      
+      if (years < 2) {
+        setChildForm(prev => ({ 
+          ...prev, 
+          birthDate,
+          currentAge: months.toString(), 
+          ageUnit: 'Bulan' 
+        }));
+      } else {
+        setChildForm(prev => ({ 
+          ...prev, 
+          birthDate,
+          currentAge: years.toString(), 
+          ageUnit: 'Tahun' 
+        }));
+      }
+    } else {
+      setChildForm(prev => ({ ...prev, birthDate }));
+    }
+  };
+
+  // Handle child form submission
+  const handleAddChildSubmit = async () => {
+    if (!parentId) {
+      setSubmitError('Data orang tua tidak ditemukan');
+      return;
+    }
+
+    try {
+      setIsSubmittingChild(true);
+      setSubmitError(null);
+
+      // Calculate age in years and months
+      const calculateAge = () => {
+        if (childForm.birthDate) {
+          const { months, years } = calculateAgeFromBirthDate(childForm.birthDate);
+          return { years, months: months % 12 };
+        }
+        const currentAge = parseInt(childForm.currentAge) || 0;
+        if (childForm.ageUnit === 'Tahun') {
+          return { years: currentAge, months: 0 };
+        } else {
+          return { years: Math.floor(currentAge / 12), months: currentAge % 12 };
+        }
+      };
+
+      const ageData = calculateAge();
+
+      // Upload image if provided
+      let imageUrl = null;
+      if (childImageFile && childForm.nik) {
+        try {
+          console.log('Uploading child image...');
+          imageUrl = await uploadChildImage(childImageFile, childForm.nik);
+          console.log('Image uploaded successfully:', imageUrl);
+        } catch (imageError) {
+          console.error('Error uploading image:', imageError);
+        }
+      }
+
+      const childData: NewChildData = {
+        nik: childForm.nik,
+        no_kk: parentId,
+        nama: childForm.name,
+        tanggal_lahir: childForm.birthDate,
+        tempat_lahir: childForm.birthPlace,
+        gender: childForm.gender,
+        umur_tahun: ageData.years,
+        umur_bulan: ageData.months,
+        bb_lahir: parseFloat(childForm.birthWeight) || 0,
+        tb_lahir: parseFloat(childForm.birthHeight) || 0,
+        lk_lahir: parseFloat(childForm.birthHeadCircumference) || 0,
+        image_anak: imageUrl,
+        aktif: true
+      };
+
+      console.log('Submitting child data:', childData);
+      
+      await insertChildData(childData);
+      
+      console.log('Child data saved successfully');
+      
+      // Reset form and close modal
+      setChildForm({
+        name: '',
+        nik: '',
+        birthPlace: '',
+        birthDate: '',
+        currentAge: '',
+        ageUnit: 'Bulan',
+        gender: 'L',
+        birthWeight: '',
+        birthHeight: '',
+        birthHeadCircumference: '',
+        photo: null,
+      });
+      setChildImageFile(null);
+      setIsManualAge(false);
+      setShowAddChild(false);
+      
+      // Reload parent data to show new child
+      const parentDetail = await fetchParentDetailByNoKK(parentId);
+      if (parentDetail) {
+        const transformedData = {
+          father: {
+            name: parentDetail.father?.nama || 'Tidak ada',
+            nik: parentDetail.father?.nik || '',
+            phone: parentDetail.father?.no_hp || '',
+            birthPlace: parentDetail.father?.tempat_lahir || '',
+            birthDate: parentDetail.father?.tanggal_lahir || '',
+            image: parentDetail.father?.image_orangtua || '/image/icon/pengukuran-anak.jpg',
+          },
+          mother: {
+            name: parentDetail.mother?.nama || 'Tidak ada',
+            nik: parentDetail.mother?.nik || '',
+            phone: parentDetail.mother?.no_hp || '',
+            birthPlace: parentDetail.mother?.tempat_lahir || '',
+            birthDate: parentDetail.mother?.tanggal_lahir || '',
+            image: parentDetail.mother?.image_orangtua || '/image/icon/pengukuran-anak.jpg',
+          },
+          family: {
+            kk: parentDetail.family.no_kk,
+            childrenCount: parentDetail.family.childrenCount,
+          },
+          address: {
+            provinsi: parentDetail.address?.provinsi || '',
+            kota: parentDetail.address?.kota || '',
+            kecamatan: parentDetail.address?.kecamatan || '',
+            desa: parentDetail.address?.desa || '',
+            kodePos: parentDetail.address?.kode_pos || '',
+            detail: parentDetail.address?.jalan || '',
+          },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          children: parentDetail.children.map((child: any) => ({
+            id: child.nik,
+            name: child.nama,
+            avatar: child.image_anak || '/image/icon/bayi-icon.svg',
+            gender: child.gender,
+            ageYears: child.umur_tahun || 0,
+            ageMonths: child.umur_bulan || 0,
+            nik: child.nik
+          })),
+        };
+        setData(transformedData);
+      }
+      
+    } catch (error: unknown) {
+      console.error('Error saving child data:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Gagal menyimpan data anak');
+    } finally {
+      setIsSubmittingChild(false);
+    }
+  };
 
 
 
@@ -337,69 +545,260 @@ export default function OrangTuaDetailPage() {
             )}
             {/* Add Child Modal */}
               {showAddChild && (
-              <div className="fixed inset-0 z-50 overflow-y-auto px-4 py-20">
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAddChild(false)} />
-                <div className="relative mx-auto bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-4 md:p-6">
-                  <div className="text-center text-lg font-semibold mb-3">Tambah Anak</div>
-                  <div className="flex items-center justify-center mb-4">
-                    <label className="cursor-pointer">
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const url = URL.createObjectURL(file);
-                          setChildForm((prev) => ({ ...prev, photo: url }));
-                        }
-                      }} />
-                      <div className="w-12 h-12 rounded-full bg-gray-100 overflow-hidden ring-2 ring-white">
+              <div className="fixed inset-0 z-50 flex justify-center px-4 py-24">
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => {
+                  setShowAddChild(false);
+                  setSubmitError(null);
+                }} />
+                <div className="relative mx-auto bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-y-auto">
+                  <div className="sticky top-0 bg-white pt-6 pb-4 px-6 md:px-8 border-b border-gray-100 z-10">
+                    <div className="text-center text-2xl font-bold">Tambah Anak</div>
+                  </div>
+                  <div className="p-6 md:p-8 pt-4">
+                  
+                  {/* Error Message */}
+                  {submitError && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-red-600 text-sm">{submitError}</p>
+                    </div>
+                  )}
+                  
+                  {/* Profile Image */}
+                  <div className="flex justify-center mb-6">
+                    <div className="relative">
+                      <div className="w-24 h-24 rounded-full overflow-hidden bg-[#E5F3F5] flex items-center justify-center text-[#397789]">
                         {childForm.photo ? (
                           <img src={childForm.photo} alt="foto anak" className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">Foto</div>
+                          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-4.418 0-8 3.582-8 8h16c0-4.418-3.582-8-8-8Z" fill="#397789"/>
+                          </svg>
                         )}
                       </div>
-                    </label>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-xs font-semibold text-gray-600 mb-1.5">Identitas Anak</div>
-                      <InputField label="Nama Anak" value={childForm.name} onChange={(v) => setChildForm((p) => ({ ...p, name: v }))} />
-                      <InputField label="Tempat Lahir" value={childForm.tempat} onChange={(v) => setChildForm((p) => ({ ...p, tempat: v }))} />
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <InputField label="Usia Bayi saat ini" value={childForm.age} onChange={(v) => setChildForm((p) => ({ ...p, age: v }))} />
-                        <div className="mb-2">
-                          <div className="text-[11px] text-gray-500 mb-1">Satuan</div>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => setChildForm((p) => ({ ...p, unit: 'bulan' }))} className={`px-2.5 py-1.5 rounded-md border text-sm ${childForm.unit === 'bulan' ? 'bg-[#E7F5F7] border-[#407A81] text-[#407A81]' : 'bg-white border-gray-300 text-gray-600'}`}>Bulan</button>
-                            <button onClick={() => setChildForm((p) => ({ ...p, unit: 'tahun' }))} className={`px-2.5 py-1.5 rounded-md border text-sm ${childForm.unit === 'tahun' ? 'bg-[#E7F5F7] border-[#407A81] text-[#407A81]' : 'bg-white border-gray-300 text-gray-600'}`}>Tahun</button>
-                          </div>
-                        </div>
-                      </div>
-                      <InputField label="Anak Ke-" value={childForm.order} onChange={(v) => setChildForm((p) => ({ ...p, order: v }))} />
-                    </div>
-                    <div>
-                      <div className="h-[18px]" />
-                      <InputField label="NIK Anak" value={childForm.nik} onChange={(v) => setChildForm((p) => ({ ...p, nik: v }))} />
-                      <InputField label="Tanggal Lahir" value={childForm.tgl} onChange={(v) => setChildForm((p) => ({ ...p, tgl: v }))} />
-                      <div className="mb-2">
-                        <div className="text-[11px] text-gray-500 mb-1">Jenis Kelamin</div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => setChildForm((p) => ({ ...p, gender: 'L' }))} className={`px-2.5 py-1.5 rounded-md border text-sm ${childForm.gender === 'L' ? 'bg-[#E7F5F7] border-[#407A81] text-[#407A81]' : 'bg-white border-gray-300 text-gray-600'}`}>Laki Laki</button>
-                          <button onClick={() => setChildForm((p) => ({ ...p, gender: 'P' }))} className={`px-2.5 py-1.5 rounded-md border text-sm ${childForm.gender === 'P' ? 'bg-[#E7F5F7] border-[#407A81] text-[#407A81]' : 'bg-white border-gray-300 text-gray-600'}`}>Perempuan</button>
-                        </div>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute bottom-0 right-0 w-8 h-8 bg-[#407A81] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#326269] transition-colors"
+                      >
+                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setChildImageFile(file);
+                            setChildForm(prev => ({ ...prev, photo: URL.createObjectURL(file) }));
+                          }
+                        }}
+                      />
                     </div>
                   </div>
-                  <div className="mt-4">
-                    <div className="text-xs font-semibold text-gray-600 mb-2">Data Timbangan saat Lahir</div>
+
+                  {/* Identitas Anak Section */}
+                  <div className="mb-6">
+                    <h3 className="text-base font-semibold text-gray-900 mb-4">Identitas Anak</h3>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <InputField label="Berat Badan Lahir" value={childForm.berat} onChange={(v) => setChildForm((p) => ({ ...p, berat: v }))} />
-                      <InputField label="Tinggi Badan Lahir" value={childForm.tinggi} onChange={(v) => setChildForm((p) => ({ ...p, tinggi: v }))} />
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nama Anak</label>
+                        <input
+                          type="text"
+                          value={childForm.name}
+                          onChange={(e) => setChildForm(prev => ({ ...prev, name: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
+                          placeholder="Emma Jhon"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">NIK Anak</label>
+                        <input
+                          type="text"
+                          value={childForm.nik}
+                          onChange={(e) => setChildForm(prev => ({ ...prev, nik: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
+                          placeholder="008211102131223"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Tempat Lahir</label>
+                        <input
+                          type="text"
+                          value={childForm.birthPlace}
+                          onChange={(e) => setChildForm(prev => ({ ...prev, birthPlace: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
+                          placeholder="Tasikmalaya"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Tanggal Lahir</label>
+                        <input
+                          type="date"
+                          value={childForm.birthDate}
+                          onChange={(e) => handleChildBirthDateChange(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Usia Bayi saat ini
+                          {childForm.birthDate && !isManualAge && (
+                            <span className="text-xs text-green-600 ml-2">(Otomatis)</span>
+                          )}
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={childForm.currentAge}
+                            onChange={(e) => {
+                              if (e.nativeEvent && e.nativeEvent.isTrusted) {
+                                setIsManualAge(true);
+                              }
+                              setChildForm(prev => ({ ...prev, currentAge: e.target.value }));
+                            }}
+                            className="w-20 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none text-center"
+                            placeholder="0"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (childForm.birthDate && !isManualAge) {
+                                const { months } = calculateAgeFromBirthDate(childForm.birthDate);
+                                setChildForm(prev => ({ ...prev, currentAge: months.toString(), ageUnit: 'Bulan' }));
+                              } else {
+                                setChildForm(prev => ({ ...prev, ageUnit: 'Bulan' }));
+                              }
+                            }}
+                            className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors cursor-pointer ${
+                              childForm.ageUnit === 'Bulan'
+                                ? 'bg-[#407A81] text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            Bulan
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (childForm.birthDate && !isManualAge) {
+                                const { years } = calculateAgeFromBirthDate(childForm.birthDate);
+                                setChildForm(prev => ({ ...prev, currentAge: years.toString(), ageUnit: 'Tahun' }));
+                              } else {
+                                setChildForm(prev => ({ ...prev, ageUnit: 'Tahun' }));
+                              }
+                            }}
+                            className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors cursor-pointer ${
+                              childForm.ageUnit === 'Tahun'
+                                ? 'bg-[#407A81] text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            Tahun
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Jenis Kelamin</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setChildForm(prev => ({ ...prev, gender: 'L' }))}
+                            className={`py-2 px-4 rounded-lg font-medium transition-colors cursor-pointer ${
+                              childForm.gender === 'L'
+                                ? 'bg-[#407A81] text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            Laki Laki
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setChildForm(prev => ({ ...prev, gender: 'P' }))}
+                            className={`py-2 px-4 rounded-lg font-medium transition-colors cursor-pointer ${
+                              childForm.gender === 'P'
+                                ? 'bg-[#407A81] text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            Perempuan
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <InputField label="Lingkar Kepala Lahir" value={childForm.lingkar} onChange={(v) => setChildForm((p) => ({ ...p, lingkar: v }))} />
                   </div>
-                  <div className="mt-5 flex items-center justify-center gap-2.5">
-                    <button onClick={() => setShowAddChild(false)} className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Batal</button>
-                    <button onClick={() => setShowAddChild(false)} className="px-4 py-2 rounded-md bg-[#407A81] text-white hover:bg-[#326269]">Tambah Anak</button>
+
+                  {/* Data Timbangan Section */}
+                  <div className="mb-6">
+                    <h3 className="text-base font-semibold text-gray-900 mb-4">Data Timbangan saat Lahir</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Berat Badan Lahir</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={childForm.birthWeight}
+                          onChange={(e) => setChildForm(prev => ({ ...prev, birthWeight: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
+                          placeholder="0.5 Kg"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Tinggi Badan Lahir</label>
+                        <input
+                          type="number"
+                          value={childForm.birthHeight}
+                          onChange={(e) => setChildForm(prev => ({ ...prev, birthHeight: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
+                          placeholder="30 Cm"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Lingkar Kepala Lahir</label>
+                        <input
+                          type="number"
+                          value={childForm.birthHeadCircumference}
+                          onChange={(e) => setChildForm(prev => ({ ...prev, birthHeadCircumference: e.target.value }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#407A81] focus:border-transparent outline-none"
+                          placeholder="15 Cm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex items-center justify-center gap-4">
+                    <button 
+                      onClick={() => {
+                        setShowAddChild(false);
+                        setSubmitError(null);
+                      }} 
+                      disabled={isSubmittingChild}
+                      className="px-6 py-3 rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50"
+                    >
+                      Batal
+                    </button>
+                    <button 
+                      onClick={handleAddChildSubmit}
+                      disabled={isSubmittingChild}
+                      className="px-6 py-3 rounded-lg bg-[#407A81] text-white hover:bg-[#326269] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmittingChild ? 'Menyimpan...' : 'Tambah Anak'}
+                    </button>
+                  </div>
                   </div>
                 </div>
               </div>
