@@ -16,7 +16,29 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Stunting Detection App",
   description: "Cegah stunting lebih awal dengan teknologi Computer Vision & IoT yang akurat dan terpercaya",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "StuntingApp",
+    startupImage: "/hero-main-placeholder.png"
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
+    "msapplication-TileColor": "#407A81"
+  }
 };
+
+export function generateViewport() {
+  return {
+    themeColor: "#407A81",
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false
+  };
+}
 
 export default function RootLayout({
   children,
@@ -24,13 +46,38 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="id" className="scroll-smooth">
+      <head>
+        <link rel="icon" href="/vercel.svg" />
+        <link rel="apple-touch-icon" href="/hero-thumb-placeholder.png" />
+        <link rel="mask-icon" href="/vercel.svg" color="#407A81" />
+        <meta name="msapplication-TileImage" content="/hero-main-placeholder.png" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
           {children}
         </AuthProvider>
+        
+        {/* Service Worker Registration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                      console.log('SW registered: ', registration);
+                    })
+                    .catch(function(registrationError) {
+                      console.log('SW registration failed: ', registrationError);
+                    });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
